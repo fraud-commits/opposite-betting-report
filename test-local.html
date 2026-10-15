@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEST - Opposite Betting Report</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css?v=12">
+</head>
+<body>
+
+<div id="popupOverlay" class="fixed inset-0 z-50 hidden bg-black opacity-50"></div>
+<div id="popupContent" class="fixed inset-0 z-50 hidden flex justify-center items-center">
+<div class="bg-white p-6 rounded shadow-md">
+<h2 id="popupTitle" class="text-lg font-bold mb-4"></h2>
+<p id="popupDesc" class="mb-4"></p>
+<div class="player-list">
+    <table id="myTable" class="table table-striped" style="width:100%"></table>
+</div>
+<button id="copyButton">Copy</button>
+</div>
+</div>
+
+<div class="card bg-white">
+  <div class="row">
+    <div class="col-12 totals flex items-stretch">
+      <div class="banker2 mr-5 drop-shadow"><span class="banker">0</span></div>
+      <div class="banker2 drop-shadow"><span class="player">0</span></div>
+    </div>
+  </div>
+    <div class="row function-bar gen-btn">
+        <div id="buttons" class="col-8 butoon-container"></div>
+        <div class="col-4 function-btn load-ex">
+          <button id="load" class="load">LOAD</button>
+          <button id="export-btn" class="load">EXPORT TO EXCEL</button>
+          <button id="export-all-btn" class="load">EXPORT ALL EXAMPLES</button>
+          <button id="example-btn" class="load">EXAMPLE</button>
+        </div>
+    </div>
+</div>
+
+<table id="my-table" class="mytable table table-striped" style="width:100%">
+    <thead><tr id="header-row"></tr></thead>
+    <tbody class="UserData"></tbody>
+</table>
+
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="js/button.js"></script>
+
+<!-- МОК Tableau API -->
+<script>
+const MOCK_COLS = ['SECOND(Round Time)','Round Id','Casino Code','Brand Code','Player Id','Username','Game Type','Table Id','Bet Position','Currency','SUM(BET)','SUM(NET)'];
+const MOCK_ROWS = [
+  ['15/10/2026 3:25:17 AM','1754623215','c1351','b33942','36909784','Fulfilled Ladyfish','Bet On Teen Patti','botp_1','PLAYER B','SC',100,95],
+  ['15/10/2026 3:25:17 AM','1754623215','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',100,-100],
+  ['15/10/2026 3:26:13 AM','1754601995','c1351','b33942','36909784','Fulfilled Ladyfish','Bet On Teen Patti','botp_1','PLAYER B','SC',16,15.2],
+  ['15/10/2026 3:26:13 AM','1754601995','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',16,-16],
+  ['15/10/2026 3:29:03 AM','1754651083','c106','b4418','34691233','Euphoria Azurite','Bet On Teen Patti','botp_1','PLAYER B','SC',118,-118],
+  ['15/10/2026 3:29:03 AM','1754651083','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',118.03,112.12],
+];
+
+window.tableau = {
+  extensions: {
+    initializeAsync: () => Promise.resolve(),
+    dashboardContent: {
+      dashboard: {
+        worksheets: [{
+          name: 'Opposite',
+          getSummaryDataAsync: () => Promise.resolve({
+            columns: MOCK_COLS.map(n => ({ fieldName: n })),
+            data: MOCK_ROWS.map(r => r.map(v => ({ value: v, formattedValue: String(v) })))
+          })
+        }]
+      }
+    }
+  }
+};
+window.addEventListener('error', e => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;z-index:9999;padding:8px;font-size:14px;';
+  d.textContent = 'JS ERROR: ' + e.message + ' @ ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(d);
+});
+</script>
+<script src="js/application.js?v=12"></script>
+
+</body>
+</html>
