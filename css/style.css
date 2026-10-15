@@ -206,6 +206,19 @@ body {
   margin-left: 12px;
   white-space: nowrap;
   align-self: center;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all .15s ease;
+}
+
+.lfs-warn-pill:hover {
+  box-shadow: 0 2px 8px rgba(180, 83, 9, .25);
+}
+
+.lfs-warn-pill.active {
+  background: #F59E0B;
+  color: #fff;
 }
 
 .lfs-subbar-actions {

@@ -180,6 +180,8 @@ const OPPOSITE_TRIPLES = [
 
 let currentBrand = "No Brand name selected";
 let currentBrandId = null;
+// фильтр "только раунды без opposite" (переключается кликом по пилюлю)
+let nooppOnly = false;
 
 // Данные последней загрузки — нужны кнопкам EXPORT EXCEL / EXPORT ALL EXAMPLES
 let lastRowData = [];
@@ -916,6 +918,8 @@ tableau.extensions.initializeAsync().then(function () {
       $("#lfs-stat-triple").toggle(Triple > 0);
 
       $("#example-btn").off("click").on("click", function () {
+        nooppOnly = false;
+        $("#lfs-noopp").removeClass('active');
         PlayerExampleGenerator();
       });
 
@@ -954,6 +958,8 @@ tableau.extensions.initializeAsync().then(function () {
   $("#load").on("click", function () {
     currentBrand = "No Brand name selected";
     currentBrandId = null;
+    nooppOnly = false;
+    $("#lfs-noopp").removeClass('active');
     $(".butoon-container").empty();
     LoadGameExample();
   });
@@ -962,6 +968,23 @@ tableau.extensions.initializeAsync().then(function () {
 
 $("#export-btn").on("click", function () {
   exportCurrentViewExcel();
+});
+
+
+// Клик по пилюлю "without opposite": показать только такие раунды / вернуть всё
+$("#lfs-noopp").on("click", function () {
+  if (!lastRowData.length) return;
+  nooppOnly = !nooppOnly;
+  $(this).toggleClass('active', nooppOnly);
+  if (nooppOnly) {
+    let exIds = new Set();
+    try { exIds = new Set(buildExampleRows(lastRowData).map(r => r.Gameid)); } catch (e) {}
+    renderTableRows(lastRowData.filter(r => !exIds.has(r.Gameid)), lastPlan);
+  } else {
+    renderTableRows(lastRowData, lastPlan);
+  }
+  const card = document.querySelector('.lfs-table-card');
+  if (card) card.scrollTop = 0;
 });
 
 
