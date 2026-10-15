@@ -156,6 +156,20 @@ OPPOSITE_PAIRS.forEach(([left, right]) => {
 // поэтому 'dealer' добавляем на противоположную сторону вручную
 BANKER_POSITIONS.push('dealer');
 
+// Тройные противоположности (рулетка: 3 исхода, lower-case).
+// Раунд считается opposite, если ставки закрывают ВСЕ 3 стороны.
+const OPPOSITE_TRIPLES = [
+  ['column_first', 'column_second', 'column_third'],
+  ['column_1', 'column_2', 'column_3'],
+  ['first column', 'second column', 'third column'],
+  ['dozen_first', 'dozen_second', 'dozen_third'],
+  ['dozen_1', 'dozen_2', 'dozen_3'],
+  ['dozen1', 'dozen2', 'dozen3'],
+  ['1st 12', '2nd 12', '3rd 12'],
+  ['first dozen', 'second dozen', 'third dozen'],
+  ['1st dozen', '2nd dozen', '3rd dozen'],
+];
+
 // ---------- КОНЕЦ КОНФИГУРАЦИИ ----------
 
 
@@ -172,6 +186,11 @@ let lastDisplayedPlan = [];
 
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
+const normPos = pos => String(pos).trim().toLowerCase();
+const isTriple = pos => {
+  const n = normPos(pos);
+  return OPPOSITE_TRIPLES.some(t => t.includes(n));
+};
 
 // Построить план колонок: идём по колонкам листа В ИХ ПОРЯДКЕ.
 // Известная колонка -> её field-конфиг (с оригинальным именем как заголовком).
@@ -260,7 +279,7 @@ function renderTableRows(dataRows, plan) {
 
       // Bet Position -> цветной бейдж
       if (f.key === 'BetPosition') {
-        const side = isBanker(value) ? 'badge-banker' : isPlayer(value) ? 'badge-player' : 'badge-neutral';
+        const side = isBanker(value) ? 'badge-banker' : isPlayer(value) ? 'badge-player' : isTriple(value) ? 'badge-triple' : 'badge-neutral';
         html = '<span class="pos-badge ' + side + '">' + value + '</span>';
       }
       // деньги -> формат 0.00, NET со знаком и цветом
@@ -317,6 +336,17 @@ function buildExampleRows(rows) {
       }
     });
 
+    // тройные противоположности: закрыты все 3 стороны?
+    OPPOSITE_TRIPLES.forEach(triple => {
+      const vols = triple.map(t => {
+        const key = Object.keys(gameData).find(k => normPos(k) === t);
+        return key ? Number(gameData[key]) || 0 : 0;
+      });
+      if (vols.every(v => v > 0)) {
+        gameData.TRIPLE = (gameData.TRIPLE || 0) + vols.reduce((a, b) => a + b, 0);
+      }
+    });
+
     gameData.players = [...new Set(playersInGame)];
     gameData.difference = (gameData.BANKER || 0) - (gameData.PLAYER || 0);
     gameData.differencePercentage = ((gameData.BANKER || 0) - (gameData.PLAYER || 0)) / (gameData.PLAYER || 1) * 100;
@@ -330,8 +360,10 @@ function buildExampleRows(rows) {
 
     if (uniquePlayers.length > 0) {
       let exampleCount = uniquePlayers.length <= 5 ? 1 : 2;
+      const pairVol = (gameData.BANKER || 0) + (gameData.PLAYER || 0);
 
-      if (gameData.differencePercentage <= 45 && gameData.differencePercentage >= -45) {
+      // 1) парные противоположности: баланс ±45% и рост топа
+      if (pairVol > 0 && gameData.differencePercentage <= 45 && gameData.differencePercentage >= -45) {
         let bankerGames = filteredArray.filter(game => game.UserId === 'BANKER');
         let playerGames = filteredArray.filter(game => game.UserId === 'PLAYER');
         let topBankerGame = bankerGames.reduce((max, game) => max.BANKER > game.BANKER ? max : game, { BANKER: -Infinity });
@@ -352,14 +384,36 @@ function buildExampleRows(rows) {
           });
         }
       }
+
+      // 2) тройные противоположности: все 3 стороны закрыты, отбор по объёму
+      if (gameData.TRIPLE) {
+        let tripleTop = filteredArray
+          .filter(game => game.UserId === 'TRIPLE')
+          .reduce((max, game) => game.TRIPLE > max ? game.TRIPLE : max, -Infinity);
+        if (gameData.TRIPLE > tripleTop) {
+          const gameIdList = [];
+          for (let i = 0; i < exampleCount; i++) {
+            gameIdList.push(gameData.gameId);
+          }
+          filteredArray.push({
+            UserId: 'TRIPLE',
+            gameIdList,
+            BANKER: 0,
+            PLAYER: 0,
+            TRIPLE: gameData.TRIPLE,
+            difference: 0,
+            differencePercentage: 0
+          });
+        }
+      }
     } else {
       return false;
     }
   });
 
-  // Sort by highest rounds by banker or player amount
+  // Sort by highest rounds by banker, player or triple amount
   filteredArray.sort((a, b) => {
-    return Math.max(b.BANKER, b.PLAYER) - Math.max(a.BANKER, a.PLAYER);
+    return Math.max(b.BANKER || 0, b.PLAYER || 0, b.TRIPLE || 0) - Math.max(a.BANKER || 0, a.PLAYER || 0, a.TRIPLE || 0);
   });
 
   return rows.filter(row => filteredArray.some(filteredRow => filteredRow.gameIdList.includes(row.Gameid)));
@@ -662,6 +716,7 @@ tableau.extensions.initializeAsync().then(function () {
       const Uniqueidentifier = [];
       let Banker = 0;
       let Player = 0;
+      let Triple = 0;
 
       if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
         $('#my-table').DataTable().clear().destroy();
@@ -703,13 +758,15 @@ tableau.extensions.initializeAsync().then(function () {
           $(".butoon-container").append(chip);
         }
 
-        // суммы BANKER / PLAYER
+        // суммы BANKER / PLAYER / TRIPLE (тройные: column, dozen)
         const betPos = val(i, betPositionField);
         const amount = Number(val(i, amountField)) || 0;
         if (isBanker(betPos)) {
           Banker += amount;
         } else if (isPlayer(betPos)) {
           Player += amount;
+        } else if (isTriple(betPos)) {
+          Triple += amount;
         }
 
         // строка данных: все колонки плана + служебные поля
@@ -791,6 +848,10 @@ tableau.extensions.initializeAsync().then(function () {
 
       let playerFormatted = Player.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
       $(".player").html(playerFormatted.replace(/[$]/g, ''));
+
+      let tripleFormatted = Triple.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+      $(".triple").html(tripleFormatted.replace(/[$]/g, ''));
+      $("#lfs-stat-triple").toggle(Triple > 0);
 
       $("#example-btn").off("click").on("click", function () {
         PlayerExampleGenerator();
