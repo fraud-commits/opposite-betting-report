@@ -582,7 +582,7 @@ function downloadBlob(blob, fileName) {
 // (множественные скачивания в Tableau блокируются — поэтому один архив)
 async function exportExamplesPerPartner() {
   if (!lastRowData.length || !lastGroups.length) {
-    alert('Сначала нажмите LOAD');
+    alert('Please click LOAD first');
     return;
   }
   if (typeof JSZip === 'undefined') {
@@ -658,7 +658,7 @@ function applyCurrentMask(rows, plan) {
 // EXPORT EXCEL — тот же генератор и формат имени, что у EXPORT ALL EXAMPLES
 async function exportCurrentViewExcel() {
   if (!lastDisplayedRows.length || !lastDisplayedPlan.length) {
-    alert('Сначала нажмите LOAD');
+    alert('Please click LOAD first');
     return;
   }
   if (typeof JSZip === 'undefined') {
