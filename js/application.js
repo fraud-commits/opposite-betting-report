@@ -600,31 +600,29 @@ async function exportExamplesPerPartner() {
 
   const timestamp = getTimestamp();
 
+  if (!lastDisplayedRows.length) {
+    alert('Please click LOAD first');
+    return;
+  }
+
   const zip = new JSZip();
   const usedNames = new Set();
-
-  // FULL example: выборка example-раундов по ВСЕМ данным (как кнопка EXAMPLE)
-  const globalExamples = buildExampleRows(lastRowData);
-  const exampleGameIds = new Set(globalExamples.map(r => r.Gameid));
-  const exampleAllRows = exampleGameIds.size
-    ? lastRowData.filter(r => exampleGameIds.has(r.Gameid))
-    : lastRowData;
 
   for (let gi = 0; gi < lastGroups.length; gi++) {
     const group = lastGroups[gi];
 
-    // Один и тот же full example в каждом файле;
-    // открыты данные только этого партнёра, чужие маскируем: "<Имя колонки> <Группа>"
-    const finalRows = exampleAllRows.map(r => {
+    // В файлы идёт то, что сейчас на экране (LOAD = всё, EXAMPLE = выборка);
+    // в каждом файле открыт только свой партнёр, чужие маскируем: "<Имя колонки> <Группа>"
+    const finalRows = lastDisplayedRows.map(r => {
       if (r.Uniqueidentifier === group.Uniqueidentifier) return r;
       const copy = Object.assign({}, r);
-      lastPlan.forEach(f => {
-        if (f.maskable) copy[f.key] = f.header + ' ' + r.UniqueGroup;
+      lastDisplayedPlan.forEach(f => {
+        if (f.maskable) copy[f.key] = (f.maskLabel || f.header) + ' ' + r.UniqueGroup;
       });
       return copy;
     });
 
-    const workbook = buildWorkbookZip(finalRows, lastPlan);
+    const workbook = buildWorkbookZip(finalRows, lastDisplayedPlan);
     const buf = await workbook.generateAsync({
       type: 'arraybuffer',
       compression: 'DEFLATE',
