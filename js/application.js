@@ -448,11 +448,15 @@ async function exportExamplesPerPartner() {
       mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
-    let safeName = String(group.Uniqueidentifier).replace(/[\\\/:*?"<>|]/g, '_') || ('Partner_' + (gi + 1));
-    let fileName = 'Example_' + safeName + '_LFS_' + (gi + 1) + '_' + timestamp + '.xlsx';
+    // Формат: Example_Partner_SubPartner_DateTime
+    const sanitize = s => String(s).replace(/[\\\/:*?"<>|]/g, '_').trim();
+    let baseName = 'Example_' + sanitize(group.PartnerName || group.Uniqueidentifier);
+    if (group.SubPartnerName) baseName += '_' + sanitize(group.SubPartnerName);
+
+    let fileName = baseName + '_' + timestamp + '.xlsx';
     let n = 2;
     while (usedNames.has(fileName)) {
-      fileName = 'Example_' + safeName + '_LFS_' + (gi + 1) + '_' + n + '_' + timestamp + '.xlsx';
+      fileName = baseName + '_' + n + '_' + timestamp + '.xlsx';
       n++;
     }
     usedNames.add(fileName);
@@ -524,14 +528,16 @@ tableau.extensions.initializeAsync().then(function () {
       for (let i = 0; i < data.length; i++) {
         const uid = brandKey(i);
 
+        const partnerVal = val(i, partnerField);
+        const subPartnerVal = subPartnerField ? val(i, subPartnerField) : '';
+
         if (!Uniqueidentifier.some(obj => obj.Uniqueidentifier === uid)) {
           Uniqueidentifier.push({
             Uniqueidentifier: uid,
-            UniqueGroup: String.fromCharCode(65 + Uniqueidentifier.length)
+            UniqueGroup: String.fromCharCode(65 + Uniqueidentifier.length),
+            PartnerName: String(partnerVal),
+            SubPartnerName: String(subPartnerVal)
           });
-
-          const partnerVal = val(i, partnerField);
-          const subPartnerVal = subPartnerField ? val(i, subPartnerField) : '';
 
           const button = $("<button/>", {
             "data-Uniqueidentifier": uid,
@@ -640,7 +646,10 @@ tableau.extensions.initializeAsync().then(function () {
       // Маскировка чужих брендов при клике на кнопку бренда
       $('button[data-Uniqueidentifier]').off("click").on("click", function () {
         var clickedUniqueId = $(this).attr('data-Uniqueidentifier');
-        currentBrand = clickedUniqueId;
+        var clickedGroup = Uniqueidentifier.find(g => g.Uniqueidentifier === clickedUniqueId);
+        currentBrand = clickedGroup
+          ? clickedGroup.PartnerName + (clickedGroup.SubPartnerName ? '_' + clickedGroup.SubPartnerName : '')
+          : clickedUniqueId;
 
         $('td[data-Uniqueidentifier]').each(function () {
           var tdUniqueId = $(this).attr('data-Uniqueidentifier');
