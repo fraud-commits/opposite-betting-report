@@ -508,9 +508,9 @@ tableau.extensions.initializeAsync().then(function () {
             "data-UniqueGroup": String.fromCharCode(65 + Uniqueidentifier.length),
             id: "333"
           }).append(
-            '<a href="#_" class="inline-flex overflow-hidden text-white bg-gray-900 rounded group">\n' +
-            '  <span class="px-3.5 py-2 text-white bg-purple-500 group-hover:bg-purple-600 flex items-center justify-center">\n' +
-            '    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>\n' +
+            '<a href="#_" class="inline-flex overflow-hidden text-white bg-[#043927] rounded group">\n' +
+            '  <span class="px-3.5 py-2 text-[#000E0B] bg-[#00F4BB] group-hover:bg-[#33F6C9] flex items-center justify-center">\n' +
+            '    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#000E0B" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>\n' +
             '<p class="margin-l"> ' + partnerVal + '</p>\n' +
             '  </span>\n' +
             '  <span class="pl-4 pr-5 py-2.5">' + subPartnerVal + '</span>\n' +
