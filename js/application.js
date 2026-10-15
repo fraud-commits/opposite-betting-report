@@ -207,6 +207,17 @@ function buildFieldPlan(sumdata) {
     }
   });
 
+  // Канонический порядок денежных колонок: BET -> NET -> BET EUR -> NET EUR
+  const moneyOrder = ['Amount', 'Net', 'AmountEUR', 'NetEUR'];
+  const moneyFields = plan.filter(f => moneyOrder.includes(f.key));
+  if (moneyFields.length > 1) {
+    const firstMoneyPos = plan.findIndex(f => moneyOrder.includes(f.key));
+    const sorted = moneyFields.sort((a, b) => moneyOrder.indexOf(a.key) - moneyOrder.indexOf(b.key));
+    const without = plan.filter(f => !moneyOrder.includes(f.key));
+    without.splice(firstMoneyPos, 0, ...sorted);
+    return without;
+  }
+
   return plan;
 }
 
