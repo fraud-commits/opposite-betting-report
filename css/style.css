@@ -353,6 +353,10 @@ body {
 
 #my-table tbody tr:hover td { background: #F7FAF8; }
 
+/* строки раундов без opposite */
+#my-table tbody tr.row-noopp td { background: #FDF3E3; }
+#my-table tbody tr.row-noopp:hover td { background: #FBEED3; }
+
 /* money columns right-aligned (set via JS class) */
 #my-table td.num, #my-table th.num { text-align: right; }
 

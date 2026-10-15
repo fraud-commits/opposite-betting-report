@@ -287,8 +287,13 @@ function renderTableRows(dataRows, plan) {
   const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
   tbody.innerHTML = '';
 
+  // раунды с opposite — остальные строки подсветим как без пары
+  let exampleIds = new Set();
+  try { exampleIds = new Set(buildExampleRows(dataRows).map(r => r.Gameid)); } catch (e) {}
+
   for (let i = 0; i < dataRows.length; i++) {
     const row = tbody.insertRow();
+    if (!exampleIds.has(dataRows[i].Gameid)) row.classList.add('row-noopp');
 
     plan.forEach((f, cellIndex) => {
       const cell = row.insertCell(cellIndex);
@@ -334,10 +339,7 @@ function renderTableRows(dataRows, plan) {
   // футер: "N records · M rounds · K without opposite"
   const rounds = new Set(dataRows.map(r => r.Gameid)).size;
   let withoutOpposite = 0;
-  try {
-    const exIds = new Set(buildExampleRows(dataRows).map(r => r.Gameid));
-    new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exIds.has(g)) withoutOpposite++; });
-  } catch (e) { withoutOpposite = 0; }
+  new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exampleIds.has(g)) withoutOpposite++; });
   const recEl = document.getElementById('lfs-records');
   if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
   const nooppEl = document.getElementById('lfs-noopp');
