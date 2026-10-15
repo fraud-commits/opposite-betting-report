@@ -20,12 +20,25 @@
 
 * { box-sizing: border-box; }
 
+html, body { height: 100%; }
+
 body {
   background: #FBFCFB;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   color: var(--lfs-text);
   margin: 0;
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.lfs-topbar,
+.lfs-subbar,
+.butoon-container,
+.lfs-footer {
+  flex-shrink: 0;
 }
 
 .hidden { display: none !important; }
@@ -260,7 +273,9 @@ body {
 /* ---------- Table ---------- */
 
 .lfs-table-card {
-  margin: 0 20px;
+  flex: 1 1 auto;
+  min-height: 120px;
+  margin: 0 20px 12px;
   border: 1px solid var(--lfs-border);
   border-radius: 12px;
   background: #fff;
@@ -282,6 +297,9 @@ body {
   white-space: nowrap;
   border: none;
   border-bottom: 1px solid var(--lfs-border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 #my-table tbody td {
