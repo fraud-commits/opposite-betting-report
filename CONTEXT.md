@@ -31,7 +31,7 @@
 
 ## Текущее состояние
 Локальный редизайн/доработки помечены **v=17** (не запушено):
-- `index.html`: тёмная шапка (gradient #043927→#000E0B), Load (зелёная), Export Excel (ghost), меню "..." с Export All Examples (ZIP); суб-бар со статистикой + Example/Players; чипы брендов; футер records/rounds + дата.
+- `index.html`: тёмная шапка (gradient #043927→#000E0B), иконка двойной стрелки (неоновая влево + белая вправо, `.lfs-back`), Load (зелёная), Export Excel (ghost), меню "..." с Export All Examples (ZIP); суб-бар со статистикой + Example/Players; чипы брендов; футер records/rounds + дата.
 - Loading state: центр экрана `load players` через `#lfs-initial-loader`; overlay начинается ниже topbar (`--lfs-topbar-h`) и `pointer-events:none`, поэтому кнопка **Load не перекрывается и кликабельна**.
 - `application.js`: чипы `.lfs-chip`; `renderTableRows()` — бейджи Bet Position, деньги 0.00, NET со знаком и цветом; футер records/rounds; меню "..." toggle; дата в футере. EXAMPLE рендерится тем же новым view (`renderTableRows`).
 - Excel: обе кнопки используют `buildWorkbookZip()` и один формат имён без `_LFS_`.
