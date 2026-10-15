@@ -1,0 +1,39 @@
+
+
+
+
+.function-bar{
+    margin: 15px;
+}
+
+.totals{
+    margin: 15px;
+    margin-left: 27px;
+}
+
+.butoon-container > button{
+    margin-right: 10px;
+}
+
+.load-ex > button {
+    margin-right: 5px;
+}
+
+
+  .buttons-excel{
+    display: none;
+  }
+
+
+  td,tr {
+    text-align: center;
+    vertical-align: top;
+    }
+
+    table.dataTable.floatThead-table {
+        margin-top: 0px !important;
+      }
+
+      .margin-l{
+        padding-left: 5px;
+      }
