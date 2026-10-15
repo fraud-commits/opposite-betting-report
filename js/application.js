@@ -32,7 +32,7 @@ const FIELDS = [
   { key: 'UserId',      aliases: ['UserId', 'User Id', 'UserID', 'Player Id', 'Player ID', 'Internal Player Id', 'External Player Id', 'Casino player id', 'Casino Player Id'], maskable: true },
   { key: 'UserName',    aliases: ['UserName', 'User Name', 'Username', 'Player Name', 'Screen Name'], maskable: true },
   { key: 'Ip',          aliases: ['Ip', 'IP', 'Player IP', 'Ip Address'], formatted: true, maskable: true },
-  { key: 'TableType',   aliases: ['TableType', 'Table Type', 'GameType', 'Game Type'] },
+  { key: 'TableType',   aliases: ['TableType', 'Table Type', 'GameType', 'Game Type'], formatted: true },
   { key: 'A',           aliases: ['A'], formatted: true, maskable: true },
   { key: 'Ma',          aliases: ['Ma'], formatted: true, maskable: true },
   { key: 'TableId',     aliases: ['TableId', 'Table Id', 'Table ID', 'TableCode', 'Table Code'], formatted: true },
