@@ -423,6 +423,7 @@ body {
 /* ---------- misc ---------- */
 
 .buttons-excel { display: none; }
+.buttons-copy { display: none; }
 .dataTables_info { display: none; }
 table.dataTable.floatThead-table { margin-top: 0 !important; }
 .margin-l { padding-left: 5px; }
