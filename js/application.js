@@ -465,7 +465,7 @@ function buildWorkbookZip(rows, plan) {
       if (s.length > maxLen) maxLen = s.length;
     });
     const width = isMoneyCol
-      ? Math.min(Math.max(maxLen + 1, 8), 20)
+      ? Math.min(Math.max(maxLen + 3, 10), 22)
       : Math.min(Math.max(Math.round(maxLen * 1.15) + 2, 8), 45);
     colsXml += '<col min="' + (ci + 1) + '" max="' + (ci + 1) + '" width="' + width + '" customWidth="1"/>';
   });
