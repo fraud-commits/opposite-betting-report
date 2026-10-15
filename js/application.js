@@ -599,13 +599,11 @@ async function exportCurrentViewExcel() {
 }
 
 function showGlobalLoader() {
-  const el = document.getElementById('lfs-initial-loader');
-  if (el) el.classList.remove('hidden');
+  document.body.classList.add('is-loading');
 }
 
 function hideGlobalLoader() {
-  const el = document.getElementById('lfs-initial-loader');
-  if (el) el.classList.add('hidden');
+  document.body.classList.remove('is-loading');
 }
 
 

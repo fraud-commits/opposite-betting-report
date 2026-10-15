@@ -396,28 +396,14 @@ body {
 
 .lfs-popup .lfs-btn { margin-bottom: 14px; }
 
-/* initial centered loader */
-.lfs-initial {
-  position: fixed;
-  inset: var(--lfs-topbar-h) 0 0 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: rgba(251, 252, 251, .85);
-  backdrop-filter: blur(2px);
-  color: var(--lfs-green);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: .03em;
+/* loading state: blur content below topbar, Load button stays sharp */
+body.is-loading .lfs-subbar,
+body.is-loading .butoon-container,
+body.is-loading .lfs-table-card,
+body.is-loading .lfs-footer {
+  filter: blur(6px);
   pointer-events: none;
-}
-
-.lfs-initial .lfs-spin {
-  width: 42px;
-  height: 42px;
+  user-select: none;
 }
 
 /* ---------- misc ---------- */
