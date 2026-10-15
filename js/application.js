@@ -187,12 +187,15 @@ function buildFieldPlan(sumdata) {
       )
     );
 
+    // заголовок = имя без обёртки агрегации (SUM(BET) -> BET)
+    const displayName = innerName || name;
+
     if (field) {
       usedKeys.add(field.key);
-      // заголовок и текст маски = оригинальное имя колонки у клиента
-      plan.push(Object.assign({}, field, { header: name, maskLabel: name, index: idx }));
+      // заголовок и текст маски = имя колонки у клиента (без SUM()/SECOND() и т.п.)
+      plan.push(Object.assign({}, field, { header: displayName, maskLabel: displayName, index: idx }));
     } else {
-      plan.push({ key: '__extra_' + idx, header: name, index: idx, extra: true });
+      plan.push({ key: '__extra_' + idx, header: displayName, index: idx, extra: true });
     }
   });
 
