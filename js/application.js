@@ -477,17 +477,20 @@ function buildWorkbookZip(rows, plan) {
     sheet += '<row r="' + (ri + 1) + '">';
     r.forEach((v, ci) => {
       const ref = colLetter(ci) + (ri + 1);
-      // 1 = шапка, 2 = деньги 0.00 по центру, 3 = то же + красный (отрицательные),
-      // 4 = обычное число по центру (Round Id и т.п. — без дробной части)
+      // 1 = шапка, 2 = деньги 0.00 по центру, 3 = то же + красный (отрицательные).
+      // Числами пишем ТОЛЬКО денежные колонки — остальное (ID, Round Id и т.п.)
+      // идёт текстом, иначе Excel превращает длинные ID в 1.29E+18 и режет точность.
       let style = ri === 0 ? ' s="1"' : ' s="2"';
       const isMoney = MONEY_KEYS.includes(plan[ci] && plan[ci].key);
       // числа могут приходить строкой (formattedValue) — распознаём, в т.ч. "300,000"
       let numVal = null;
-      if (typeof v === 'number' && isFinite(v)) numVal = v;
-      else if (typeof v === 'string' && /^-?[\d,]+(\.\d+)?$/.test(v.trim())) numVal = Number(v.replace(/,/g, ''));
+      if (isMoney) {
+        if (typeof v === 'number' && isFinite(v)) numVal = v;
+        else if (typeof v === 'string' && /^-?[\d,]+(\.\d+)?$/.test(v.trim())) numVal = Number(v.replace(/,/g, ''));
+      }
 
       if (numVal !== null && isFinite(numVal)) {
-        if (ri > 0) style = isMoney ? (numVal < 0 ? ' s="3"' : ' s="2"') : ' s="4"';
+        if (ri > 0 && numVal < 0) style = ' s="3"';
         sheet += '<c r="' + ref + '"' + style + '><v>' + numVal + '</v></c>';
       } else {
         sheet += '<c r="' + ref + '" t="inlineStr"' + style + '><is><t xml:space="preserve">' +
