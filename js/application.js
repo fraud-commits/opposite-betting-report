@@ -318,33 +318,126 @@ function buildExampleRows(rows) {
   return rows.filter(row => filteredArray.some(filteredRow => filteredRow.gameIdList.includes(row.Gameid)));
 }
 
-// Скачать example Excel для каждого бренда по отдельности
-function exportExamplesPerPartner() {
+// Построить однолистовой XLSX (JSZip-объект) из строк данных
+function buildWorkbookZip(rows, plan) {
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const colLetter = n => {
+    let s = '';
+    n++;
+    while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+    return s;
+  };
+
+  const header = plan.map(f => f.header);
+  const all = [header].concat(rows.map(r => plan.map(f => r[f.key])));
+  let sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  all.forEach((r, ri) => {
+    sheet += '<row r="' + (ri + 1) + '">';
+    r.forEach((v, ci) => {
+      const ref = colLetter(ci) + (ri + 1);
+      const style = ri === 0 ? ' s="1"' : '';
+      if (typeof v === 'number' && isFinite(v)) {
+        sheet += '<c r="' + ref + '"' + style + '><v>' + v + '</v></c>';
+      } else {
+        sheet += '<c r="' + ref + '" t="inlineStr"' + style + '><is><t xml:space="preserve">' +
+          esc(v === null || v === undefined ? '' : v) + '</t></is></c>';
+      }
+    });
+    sheet += '</row>';
+  });
+  sheet += '</sheetData></worksheet>';
+
+  const zip = new JSZip();
+  zip.file('xl/worksheets/sheet1.xml', sheet);
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '</Types>');
+  zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>');
+  zip.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="Example" sheetId="1" r:id="rId1"/></sheets></workbook>');
+  zip.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '</Relationships>');
+  zip.file('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border/></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+    '</styleSheet>');
+  return zip;
+}
+
+// Скачать ZIP: внутри отдельный Excel-файл на каждого партнёра
+// (множественные скачивания в Tableau блокируются — поэтому один архив)
+async function exportExamplesPerPartner() {
   if (!lastRowData.length || !lastGroups.length) {
     alert('Сначала нажмите LOAD');
     return;
   }
-
-  let idx = 0;
-
-  function next() {
-    if (idx >= lastGroups.length) return;
-
-    const group = lastGroups[idx];
-    const rows = lastRowData.filter(r => r.Uniqueidentifier === group.Uniqueidentifier);
-    const exampleRows = buildExampleRows(rows);
-
-    renderTableRows(exampleRows.length ? exampleRows : rows, lastPlan);
-
-    currentBrand = group.Uniqueidentifier;
-    LoadDataTables();
-    $(".buttons-excel").trigger("click");
-
-    idx++;
-    setTimeout(next, 700); // пауза, чтобы браузер не блокировал множественные загрузки
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip library not loaded');
+    return;
   }
 
-  next();
+  const now = new Date();
+  const timestamp = now.getFullYear() + "-" +
+    String(now.getMonth() + 1).padStart(2, '0') + "-" +
+    String(now.getDate()).padStart(2, '0') + "_" +
+    String(now.getHours()).padStart(2, '0') + "-" +
+    String(now.getMinutes()).padStart(2, '0') + "-" +
+    String(now.getSeconds()).padStart(2, '0');
+
+  const zip = new JSZip();
+  const usedNames = new Set();
+
+  for (let gi = 0; gi < lastGroups.length; gi++) {
+    const group = lastGroups[gi];
+    const rows = lastRowData.filter(r => r.Uniqueidentifier === group.Uniqueidentifier);
+    const exampleRows = buildExampleRows(rows);
+    const finalRows = exampleRows.length ? exampleRows : rows;
+
+    const workbook = buildWorkbookZip(finalRows, lastPlan);
+    const buf = await workbook.generateAsync({
+      type: 'arraybuffer',
+      compression: 'DEFLATE',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    let safeName = String(group.Uniqueidentifier).replace(/[\\\/:*?"<>|]/g, '_') || ('Partner_' + (gi + 1));
+    let fileName = 'Example_' + safeName + '_LFS_' + (gi + 1) + '_' + timestamp + '.xlsx';
+    let n = 2;
+    while (usedNames.has(fileName)) {
+      fileName = 'Example_' + safeName + '_LFS_' + (gi + 1) + '_' + n + '_' + timestamp + '.xlsx';
+      n++;
+    }
+    usedNames.add(fileName);
+
+    zip.file(fileName, buf);
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Examples_per_Partner_LFS_' + timestamp + '.zip';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 40000);
 }
 
 
