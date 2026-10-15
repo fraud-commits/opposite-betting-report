@@ -192,6 +192,10 @@ let lastDisplayedPlan = [];
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const normPos = pos => String(pos).trim().toLowerCase();
+
+// Максимальный дисбаланс сторон парного раунда в процентах:
+// (First − Second) / Second × 100 должен быть в пределах ±OPPOSITE_BALANCE_PCT
+const OPPOSITE_BALANCE_PCT = 10;
 const isTriple = pos => {
   const n = normPos(pos);
   return OPPOSITE_TRIPLES.some(t => t.includes(n));
@@ -396,8 +400,8 @@ function buildExampleRows(rows) {
       let exampleCount = uniquePlayers.length <= 5 ? 1 : 2;
       const pairVol = (gameData.BANKER || 0) + (gameData.PLAYER || 0);
 
-      // 1) парные противоположности: баланс ±45% и рост топа
-      if (pairVol > 0 && gameData.differencePercentage <= 45 && gameData.differencePercentage >= -45) {
+      // 1) парные противоположности: баланс ±OPPOSITE_BALANCE_PCT и рост топа
+      if (pairVol > 0 && gameData.differencePercentage <= OPPOSITE_BALANCE_PCT && gameData.differencePercentage >= -OPPOSITE_BALANCE_PCT) {
         let bankerGames = filteredArray.filter(game => game.UserId === 'BANKER');
         let playerGames = filteredArray.filter(game => game.UserId === 'PLAYER');
         let topBankerGame = bankerGames.reduce((max, game) => max.BANKER > game.BANKER ? max : game, { BANKER: -Infinity });
