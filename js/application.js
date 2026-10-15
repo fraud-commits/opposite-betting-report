@@ -386,15 +386,17 @@ function buildWorkbookZip(rows, plan) {
     sheet += '<row r="' + (ri + 1) + '">';
     r.forEach((v, ci) => {
       const ref = colLetter(ci) + (ri + 1);
-      // 1 = шапка, 2 = ячейка по центру с рамкой, 3 = то же + красный (отрицательные)
+      // 1 = шапка, 2 = деньги 0.00 по центру, 3 = то же + красный (отрицательные),
+      // 4 = обычное число по центру (Round Id и т.п. — без дробной части)
       let style = ri === 0 ? ' s="1"' : ' s="2"';
+      const isMoney = MONEY_KEYS.includes(plan[ci] && plan[ci].key);
       // числа могут приходить строкой (formattedValue) — распознаём, в т.ч. "300,000"
       let numVal = null;
       if (typeof v === 'number' && isFinite(v)) numVal = v;
       else if (typeof v === 'string' && /^-?[\d,]+(\.\d+)?$/.test(v.trim())) numVal = Number(v.replace(/,/g, ''));
 
       if (numVal !== null && isFinite(numVal)) {
-        if (ri > 0 && numVal < 0) style = ' s="3"';
+        if (ri > 0) style = isMoney ? (numVal < 0 ? ' s="3"' : ' s="2"') : ' s="4"';
         sheet += '<c r="' + ref + '"' + style + '><v>' + numVal + '</v></c>';
       } else {
         sheet += '<c r="' + ref + '" t="inlineStr"' + style + '><is><t xml:space="preserve">' +
@@ -427,10 +429,12 @@ function buildWorkbookZip(rows, plan) {
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
     '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
     '</Relationships>');
-  // Стили: 0 = обычная, 1 = шапка (белый жирный на тёмно-зелёном, рамка, центр),
-  //        2 = ячейка по центру с рамкой, 3 = то же + красный шрифт (отрицательные)
+  // Стили: 0 = обычная, 1 = шапка (#EFFFFB, рамка, центр),
+  //        2 = деньги (0.00, центр, рамка), 3 = то же + красный (отрицательные),
+  //        4 = число без формата (центр, рамка)
   zip.file('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.00"/></numFmts>' +
     '<fonts count="3">' +
     '<font><sz val="11"/><name val="Calibri"/></font>' +
     '<font><b/><sz val="11"/><name val="Calibri"/></font>' +
@@ -447,11 +451,12 @@ function buildWorkbookZip(rows, plan) {
     '<top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>' +
     '</borders>' +
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-    '<cellXfs count="4">' +
+    '<cellXfs count="5">' +
     '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
     '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+    '<xf numFmtId="164" fontId="2" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
     '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
-    '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
     '</cellXfs>' +
     '</styleSheet>');
   return zip;
