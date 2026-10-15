@@ -312,6 +312,9 @@ body {
 .badge-banker { background: #E9E5FB; color: #6A5ACD; }
 .badge-player { background: #DAF6E9; color: #0B7A55; }
 .badge-triple { background: #FEF3C7; color: #B45309; }
+.badge-triple-1 { background: #FEF3C7; color: #B45309; }
+.badge-triple-2 { background: #E0F2FE; color: #0369A1; }
+.badge-triple-3 { background: #FCE7F3; color: #BE185D; }
 .badge-neutral { background: #EEF1F0; color: var(--lfs-text-muted); }
 
 /* net numbers */

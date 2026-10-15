@@ -191,6 +191,15 @@ const isTriple = pos => {
   const n = normPos(pos);
   return OPPOSITE_TRIPLES.some(t => t.includes(n));
 };
+// индекс стороны внутри тройки (0/1/2), чтобы красить каждую своим цветом
+const tripleSide = pos => {
+  const n = normPos(pos);
+  for (const t of OPPOSITE_TRIPLES) {
+    const idx = t.indexOf(n);
+    if (idx !== -1) return idx;
+  }
+  return -1;
+};
 
 // Построить план колонок: идём по колонкам листа В ИХ ПОРЯДКЕ.
 // Известная колонка -> её field-конфиг (с оригинальным именем как заголовком).
@@ -279,7 +288,13 @@ function renderTableRows(dataRows, plan) {
 
       // Bet Position -> цветной бейдж
       if (f.key === 'BetPosition') {
-        const side = isBanker(value) ? 'badge-banker' : isPlayer(value) ? 'badge-player' : isTriple(value) ? 'badge-triple' : 'badge-neutral';
+        let side = 'badge-neutral';
+        if (isBanker(value)) side = 'badge-banker';
+        else if (isPlayer(value)) side = 'badge-player';
+        else {
+          const tSide = tripleSide(value);
+          if (tSide !== -1) side = 'badge-triple-' + (tSide + 1);
+        }
         html = '<span class="pos-badge ' + side + '">' + value + '</span>';
       }
       // деньги -> формат 0.00, NET со знаком и цветом
