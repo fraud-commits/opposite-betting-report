@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Opposite Betting Report</title>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/style.css?v=19">
+    <link rel="stylesheet" href="css/style.css?v=20">
 </head>
 
 <body>
@@ -51,21 +51,12 @@
     <button id="export-btn" class="lfs-btn-ghost">
       Export Excel
     </button>
-    <div class="lfs-menu-wrap">
-      <button id="lfs-menu-btn" class="lfs-btn-ghost lfs-dots">
-        <svg fill="currentColor" viewBox="0 0 24 24" width="18" height="18">
-          <circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle>
-        </svg>
-      </button>
-      <div id="lfs-menu" class="lfs-menu hidden">
-        <button id="export-all-btn" class="lfs-menu-item">
-          <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path><path d="M5 21h14"></path>
-          </svg>
-          Export All Examples (ZIP)
-        </button>
-      </div>
-    </div>
+    <button id="export-all-btn" class="lfs-btn-ghost">
+      <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+        <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path><path d="M5 21h14"></path>
+      </svg>
+      Export All Examples
+    </button>
   </div>
 </header>
 
@@ -125,7 +116,7 @@
 
 <script type="text/javascript" src="js/tableau-extensions-1.0.0.min.js"></script>
 <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.js"></script>
-<script type="text/javascript" src="js/application.js?v=19"></script>
+<script type="text/javascript" src="js/application.js?v=20"></script>
 <script src="https://cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
@@ -133,6 +124,7 @@
 
 </body>
 </html>
+
 
 
 

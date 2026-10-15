@@ -827,14 +827,7 @@ $("#export-all-btn").on("click", function () {
 });
 
 
-// меню "..." в шапке
-$("#lfs-menu-btn").on("click", function (e) {
-  e.stopPropagation();
-  $("#lfs-menu").toggleClass("hidden");
-});
-$(document).on("click", function () {
-  $("#lfs-menu").addClass("hidden");
-});
+
 
 
 function openPopup(title, desc) {
