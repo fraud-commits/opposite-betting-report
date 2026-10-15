@@ -162,6 +162,11 @@ BANKER_POSITIONS.push('dealer');
 let currentBrand = "No Brand name selected";
 let TicketCount = 0;
 
+// Данные последней загрузки — нужны кнопке EXPORT ALL EXAMPLES
+let lastRowData = [];
+let lastGroups = [];
+let lastPlan = [];
+
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
 
@@ -212,6 +217,134 @@ function buildHeader(plan) {
     th.textContent = f.header;
     tr.appendChild(th);
   });
+}
+
+
+// Отрисовать строки в таблице по плану колонок
+function renderTableRows(dataRows, plan) {
+  if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
+    $('#my-table').DataTable().clear().destroy();
+  }
+
+  const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
+  tbody.innerHTML = '';
+
+  for (let i = 0; i < dataRows.length; i++) {
+    const row = tbody.insertRow();
+
+    plan.forEach((f, cellIndex) => {
+      const cell = row.insertCell(cellIndex);
+      const value = dataRows[i][f.key];
+      cell.innerHTML = value;
+
+      if (f.maskable) {
+        cell.setAttribute("data-UniqueGroup", dataRows[i].UniqueGroup);
+        cell.setAttribute("data-Uniqueidentifier", dataRows[i].Uniqueidentifier);
+        cell.setAttribute("data-maskvalue", value);
+        cell.setAttribute("data-masklabel", f.maskLabel);
+      }
+    });
+  }
+}
+
+// Выборка example-раундов из переданных строк (логика кнопки EXAMPLE)
+function buildExampleRows(rows) {
+  const uniqueGameIds = [...new Set(rows.map(item => item.Gameid))];
+  const resultArray = [];
+
+  uniqueGameIds.forEach(gameId => {
+    const gameData = { gameId: gameId };
+    const playersInGame = [];
+
+    rows.forEach(item => {
+      if (item.Gameid === gameId) {
+        const betPosition = item.BetPosition;
+        if (isBanker(betPosition)) {
+          gameData.BANKER = (gameData.BANKER || 0) + item.AmountNum;
+        } else if (isPlayer(betPosition)) {
+          gameData.PLAYER = (gameData.PLAYER || 0) + item.AmountNum;
+        } else {
+          gameData[betPosition] = (gameData[betPosition] || 0) + item.AmountNum;
+        }
+        playersInGame.push(item.UserId);
+      }
+    });
+
+    gameData.players = [...new Set(playersInGame)];
+    gameData.difference = (gameData.BANKER || 0) - (gameData.PLAYER || 0);
+    gameData.differencePercentage = ((gameData.BANKER || 0) - (gameData.PLAYER || 0)) / (gameData.PLAYER || 1) * 100;
+    resultArray.push(gameData);
+  });
+
+  const filteredArray = [];
+
+  resultArray.forEach(gameData => {
+    const uniquePlayers = [...new Set(gameData.players)];
+
+    if (uniquePlayers.length > 0) {
+      let exampleCount = uniquePlayers.length <= 5 ? 1 : 2;
+
+      if (gameData.differencePercentage <= 45 && gameData.differencePercentage >= -45) {
+        let bankerGames = filteredArray.filter(game => game.UserId === 'BANKER');
+        let playerGames = filteredArray.filter(game => game.UserId === 'PLAYER');
+        let topBankerGame = bankerGames.reduce((max, game) => max.BANKER > game.BANKER ? max : game, { BANKER: -Infinity });
+        let topPlayerGame = playerGames.reduce((max, game) => max.PLAYER > game.PLAYER ? max : game, { PLAYER: -Infinity });
+
+        if ((gameData.BANKER || 0) > topBankerGame.BANKER || (gameData.PLAYER || 0) > topPlayerGame.PLAYER) {
+          const gameIdList = [];
+          for (let i = 0; i < exampleCount; i++) {
+            gameIdList.push(gameData.gameId);
+          }
+          filteredArray.push({
+            UserId: gameData.BANKER >= gameData.PLAYER ? 'BANKER' : 'PLAYER',
+            gameIdList,
+            BANKER: gameData.BANKER || 0,
+            PLAYER: gameData.PLAYER || 0,
+            difference: gameData.difference || 0,
+            differencePercentage: gameData.differencePercentage || 0
+          });
+        }
+      }
+    } else {
+      return false;
+    }
+  });
+
+  // Sort by highest rounds by banker or player amount
+  filteredArray.sort((a, b) => {
+    return Math.max(b.BANKER, b.PLAYER) - Math.max(a.BANKER, a.PLAYER);
+  });
+
+  return rows.filter(row => filteredArray.some(filteredRow => filteredRow.gameIdList.includes(row.Gameid)));
+}
+
+// Скачать example Excel для каждого бренда по отдельности
+function exportExamplesPerPartner() {
+  if (!lastRowData.length || !lastGroups.length) {
+    alert('Сначала нажмите LOAD');
+    return;
+  }
+
+  let idx = 0;
+
+  function next() {
+    if (idx >= lastGroups.length) return;
+
+    const group = lastGroups[idx];
+    const rows = lastRowData.filter(r => r.Uniqueidentifier === group.Uniqueidentifier);
+    const exampleRows = buildExampleRows(rows);
+
+    renderTableRows(exampleRows.length ? exampleRows : rows, lastPlan);
+
+    currentBrand = group.Uniqueidentifier;
+    LoadDataTables();
+    $(".buttons-excel").trigger("click");
+
+    idx++;
+    setTimeout(next, 700); // пауза, чтобы браузер не блокировал множественные загрузки
+  }
+
+  next();
 }
 
 
@@ -353,114 +486,20 @@ tableau.extensions.initializeAsync().then(function () {
       GetPlayerList();
 
 
+      // сохраняем для кнопки EXPORT ALL EXAMPLES
+      lastRowData = rowData;
+      lastGroups = Uniqueidentifier;
+      lastPlan = plan;
+
       function PlayerExampleGenerator() {
         $(".UserData").empty();
-
-        const uniqueGameIds = [...new Set(rowData.map(item => item.Gameid))];
-        const resultArray = [];
-
-        uniqueGameIds.forEach(gameId => {
-          const gameData = { gameId: gameId };
-          const playersInGame = [];
-
-          rowData.forEach(item => {
-            if (item.Gameid === gameId) {
-              const betPosition = item.BetPosition;
-              if (isBanker(betPosition)) {
-                gameData.BANKER = (gameData.BANKER || 0) + item.AmountNum;
-              } else if (isPlayer(betPosition)) {
-                gameData.PLAYER = (gameData.PLAYER || 0) + item.AmountNum;
-              } else {
-                gameData[betPosition] = (gameData[betPosition] || 0) + item.AmountNum;
-              }
-              playersInGame.push(item.UserId);
-            }
-          });
-
-          gameData.players = [...new Set(playersInGame)];
-          gameData.difference = (gameData.BANKER || 0) - (gameData.PLAYER || 0);
-          gameData.differencePercentage = ((gameData.BANKER || 0) - (gameData.PLAYER || 0)) / (gameData.PLAYER || 1) * 100;
-          resultArray.push(gameData);
-        });
-
-        const filteredArray = [];
-
-        resultArray.forEach(gameData => {
-          const uniquePlayers = [...new Set(gameData.players)];
-
-          if (uniquePlayers.length > 0) {
-            let exampleCount = uniquePlayers.length <= 5 ? 1 : 2;
-
-            if (gameData.differencePercentage <= 45 && gameData.differencePercentage >= -45) {
-              let bankerGames = filteredArray.filter(game => game.UserId === 'BANKER');
-              let playerGames = filteredArray.filter(game => game.UserId === 'PLAYER');
-              let topBankerGame = bankerGames.reduce((max, game) => max.BANKER > game.BANKER ? max : game, { BANKER: -Infinity });
-              let topPlayerGame = playerGames.reduce((max, game) => max.PLAYER > game.PLAYER ? max : game, { PLAYER: -Infinity });
-
-              if ((gameData.BANKER || 0) > topBankerGame.BANKER || (gameData.PLAYER || 0) > topPlayerGame.PLAYER) {
-                const gameIdList = [];
-                for (let i = 0; i < exampleCount; i++) {
-                  gameIdList.push(gameData.gameId);
-                }
-                filteredArray.push({
-                  UserId: gameData.BANKER >= gameData.PLAYER ? 'BANKER' : 'PLAYER',
-                  gameIdList,
-                  BANKER: gameData.BANKER || 0,
-                  PLAYER: gameData.PLAYER || 0,
-                  difference: gameData.difference || 0,
-                  differencePercentage: gameData.differencePercentage || 0
-                });
-              }
-            }
-          } else {
-            return false;
-          }
-        });
-
-        // Sort filteredArray by highest rounds by banker or player amount
-        filteredArray.sort((a, b) => {
-          const aMaxBet = Math.max(a.BANKER, a.PLAYER);
-          const bMaxBet = Math.max(b.BANKER, b.PLAYER);
-          return bMaxBet - aMaxBet;
-        });
-
-        const matchingRows = rowData.filter(row => filteredArray.some(filteredRow => filteredRow.gameIdList.includes(row.Gameid)));
-
-        console.log(resultArray);
-        console.log(filteredArray);
-        console.log(matchingRows);
-
+        const matchingRows = buildExampleRows(rowData);
         GenerateHtmalTable(matchingRows);
       }
 
 
       function GenerateHtmalTable(matchingRows) {
-        var dataRows = matchingRows || rowData;
-
-        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
-          $('#my-table').DataTable().clear().destroy();
-        }
-
-        const table = document.getElementById("my-table");
-        const tbody = table.getElementsByTagName("tbody")[0];
-        tbody.innerHTML = '';
-
-        for (let i = 0; i < dataRows.length; i++) {
-          const row = tbody.insertRow();
-
-          plan.forEach((f, cellIndex) => {
-            const cell = row.insertCell(cellIndex);
-            const value = dataRows[i][f.key];
-            cell.innerHTML = value;
-
-            if (f.maskable) {
-              cell.setAttribute("data-UniqueGroup", dataRows[i].UniqueGroup);
-              cell.setAttribute("data-Uniqueidentifier", dataRows[i].Uniqueidentifier);
-              cell.setAttribute("data-maskvalue", value);
-              cell.setAttribute("data-masklabel", f.maskLabel);
-            }
-          });
-        }
+        renderTableRows(matchingRows || rowData, plan);
       }
 
       GenerateHtmalTable();
@@ -541,6 +580,11 @@ function LoadDataTables() {
 $("#export-btn").on("click", function () {
   LoadDataTables();
   $(".buttons-excel").trigger("click");
+});
+
+
+$("#export-all-btn").on("click", function () {
+  exportExamplesPerPartner();
 });
 
 
