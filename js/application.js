@@ -780,6 +780,10 @@ tableau.extensions.initializeAsync().then(function () {
           ? clickedGroup.PartnerName + (clickedGroup.SubPartnerName ? '_' + clickedGroup.SubPartnerName : '')
           : clickedUniqueId;
 
+        // подсветить выбранный чип
+        $('button[data-Uniqueidentifier]').removeClass('active');
+        $(this).addClass('active');
+
         $('td[data-Uniqueidentifier]').each(function () {
           var tdUniqueId = $(this).attr('data-Uniqueidentifier');
           if (tdUniqueId !== clickedUniqueId) {

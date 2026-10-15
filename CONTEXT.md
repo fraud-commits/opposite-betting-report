@@ -14,7 +14,7 @@
 При каждом изменении кода поднимать версию в ТРЁХ местах (Tableau кеширует):
 - `MAIN.trex`: `<url>https://fraud-commits.github.io/opposite-betting-report/?v=N</url>`
 - `index.html`: `css/style.css?v=N` и `js/application.js?v=N`
-Текущая задеплоенная версия: **v=14**. Локальная работа сейчас помечена **v=16** (не запушено).
+Текущая задеплоенная версия: **v=14**. Локальная работа сейчас помечена **v=17** (не запушено).
 
 ## Архитектура js/application.js
 1. **FIELDS** — конфиг полей: `key`, `aliases` (имена колонок клиентов, регистр не важен), `formatted`, `numeric`, `maskable`. Порядок таблицы = порядок колонок в листе клиента.
@@ -30,7 +30,7 @@
 Дата: Created/Created At/Finished At/Round Start Time/Round Time/Second of Round Time/Second of Timestamp; Partner: Partner Id/Company Code/Casino Id/Casino Code/Operator Id/Operator Name; SubPartner: Sub Partner Id/Ho/Sub Operator Id/Brand Code; UserId: Player Id/Player ID/Internal Player Id/External Player Id/User Id; UserName: Username/Player Name/Screen Name; также DealerId, Player IP, A, Ma, Game Type, Table Id, Bet Position/Bet_Position, Bet Type, Odds, Currency, BET, NET, BET EUR, NET EUR.
 
 ## Текущее состояние
-Локальный редизайн/доработки помечены **v=16** (не запушено):
+Локальный редизайн/доработки помечены **v=17** (не запушено):
 - `index.html`: тёмная шапка (gradient #043927→#000E0B), Load (зелёная), Export Excel (ghost), меню "..." с Export All Examples (ZIP); суб-бар со статистикой + Example/Players; чипы брендов; футер records/rounds + дата.
 - Loading state: центр экрана `load players` через `#lfs-initial-loader`; overlay начинается ниже topbar (`--lfs-topbar-h`) и `pointer-events:none`, поэтому кнопка **Load не перекрывается и кликабельна**.
 - `application.js`: чипы `.lfs-chip`; `renderTableRows()` — бейджи Bet Position, деньги 0.00, NET со знаком и цветом; футер records/rounds; меню "..." toggle; дата в футере. EXAMPLE рендерится тем же новым view (`renderTableRows`).
