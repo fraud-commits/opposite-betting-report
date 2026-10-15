@@ -408,8 +408,22 @@ async function exportExamplesPerPartner() {
   for (let gi = 0; gi < lastGroups.length; gi++) {
     const group = lastGroups[gi];
     const rows = lastRowData.filter(r => r.Uniqueidentifier === group.Uniqueidentifier);
-    const exampleRows = buildExampleRows(rows);
-    const finalRows = exampleRows.length ? exampleRows : rows;
+    let exampleRows = buildExampleRows(rows);
+    if (!exampleRows.length) exampleRows = rows;
+
+    // Берём ВСЕ строки example-раундов (обе стороны ставок),
+    // а данные чужих партнёров маскируем: "<Имя колонки> <Группа>"
+    const gameIds = new Set(exampleRows.map(r => r.Gameid));
+    const finalRows = lastRowData
+      .filter(r => gameIds.has(r.Gameid))
+      .map(r => {
+        if (r.Uniqueidentifier === group.Uniqueidentifier) return r;
+        const copy = Object.assign({}, r);
+        lastPlan.forEach(f => {
+          if (f.maskable) copy[f.key] = f.header + ' ' + r.UniqueGroup;
+        });
+        return copy;
+      });
 
     const workbook = buildWorkbookZip(finalRows, lastPlan);
     const buf = await workbook.generateAsync({
