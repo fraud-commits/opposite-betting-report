@@ -330,8 +330,22 @@ function buildWorkbookZip(rows, plan) {
 
   const header = plan.map(f => f.header);
   const all = [header].concat(rows.map(r => plan.map(f => r[f.key])));
+
+  // автоширина колонок по самому длинному значению
+  let colsXml = '<cols>';
+  header.forEach((h, ci) => {
+    let maxLen = String(h).length;
+    all.forEach(r => {
+      const len = String(r[ci] === null || r[ci] === undefined ? '' : r[ci]).length;
+      if (len > maxLen) maxLen = len;
+    });
+    const width = Math.min(Math.max(Math.round(maxLen * 1.15) + 2, 8), 45);
+    colsXml += '<col min="' + (ci + 1) + '" max="' + (ci + 1) + '" width="' + width + '" customWidth="1"/>';
+  });
+  colsXml += '</cols>';
+
   let sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + colsXml + '<sheetData>';
   all.forEach((r, ri) => {
     sheet += '<row r="' + (ri + 1) + '">';
     r.forEach((v, ci) => {
@@ -383,13 +397,13 @@ function buildWorkbookZip(rows, plan) {
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
     '<fonts count="3">' +
     '<font><sz val="11"/><name val="Calibri"/></font>' +
-    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="11"/><name val="Calibri"/></font>' +
     '<font><sz val="11"/><color rgb="FFFF0000"/><name val="Calibri"/></font>' +
     '</fonts>' +
     '<fills count="3">' +
     '<fill><patternFill patternType="none"/></fill>' +
     '<fill><patternFill patternType="gray125"/></fill>' +
-    '<fill><patternFill patternType="solid"><fgColor rgb="FF043927"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFEFFFFB"/><bgColor indexed="64"/></patternFill></fill>' +
     '</fills>' +
     '<borders count="2">' +
     '<border><left/><right/><top/><bottom/><diagonal/></border>' +
