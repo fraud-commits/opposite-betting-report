@@ -336,7 +336,7 @@ function buildWorkbookZip(rows, plan) {
     sheet += '<row r="' + (ri + 1) + '">';
     r.forEach((v, ci) => {
       const ref = colLetter(ci) + (ri + 1);
-      const style = ri === 0 ? ' s="1"' : '';
+      const style = ri === 0 ? ' s="1"' : ' s="2"'; // 1 = шапка, 2 = ячейка с рамкой
       if (typeof v === 'number' && isFinite(v)) {
         sheet += '<c r="' + ref + '"' + style + '><v>' + v + '</v></c>';
       } else {
@@ -370,14 +370,29 @@ function buildWorkbookZip(rows, plan) {
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
     '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
     '</Relationships>');
+  // Стили: 0 = обычная, 1 = шапка (белый жирный на тёмно-зелёном + рамка), 2 = ячейка с рамкой
   zip.file('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
-    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
-    '<borders count="1"><border/></borders>' +
+    '<fonts count="2">' +
+    '<font><sz val="11"/><name val="Calibri"/></font>' +
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>' +
+    '</fonts>' +
+    '<fills count="3">' +
+    '<fill><patternFill patternType="none"/></fill>' +
+    '<fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF043927"/><bgColor indexed="64"/></patternFill></fill>' +
+    '</fills>' +
+    '<borders count="2">' +
+    '<border><left/><right/><top/><bottom/><diagonal/></border>' +
+    '<border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right>' +
+    '<top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>' +
+    '</borders>' +
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-    '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
-    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+    '<cellXfs count="3">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>' +
+    '</cellXfs>' +
     '</styleSheet>');
   return zip;
 }
@@ -405,25 +420,26 @@ async function exportExamplesPerPartner() {
   const zip = new JSZip();
   const usedNames = new Set();
 
+  // FULL example: выборка example-раундов по ВСЕМ данным (как кнопка EXAMPLE)
+  const globalExamples = buildExampleRows(lastRowData);
+  const exampleGameIds = new Set(globalExamples.map(r => r.Gameid));
+  const exampleAllRows = exampleGameIds.size
+    ? lastRowData.filter(r => exampleGameIds.has(r.Gameid))
+    : lastRowData;
+
   for (let gi = 0; gi < lastGroups.length; gi++) {
     const group = lastGroups[gi];
-    const rows = lastRowData.filter(r => r.Uniqueidentifier === group.Uniqueidentifier);
-    let exampleRows = buildExampleRows(rows);
-    if (!exampleRows.length) exampleRows = rows;
 
-    // Берём ВСЕ строки example-раундов (обе стороны ставок),
-    // а данные чужих партнёров маскируем: "<Имя колонки> <Группа>"
-    const gameIds = new Set(exampleRows.map(r => r.Gameid));
-    const finalRows = lastRowData
-      .filter(r => gameIds.has(r.Gameid))
-      .map(r => {
-        if (r.Uniqueidentifier === group.Uniqueidentifier) return r;
-        const copy = Object.assign({}, r);
-        lastPlan.forEach(f => {
-          if (f.maskable) copy[f.key] = f.header + ' ' + r.UniqueGroup;
-        });
-        return copy;
+    // Один и тот же full example в каждом файле;
+    // открыты данные только этого партнёра, чужие маскируем: "<Имя колонки> <Группа>"
+    const finalRows = exampleAllRows.map(r => {
+      if (r.Uniqueidentifier === group.Uniqueidentifier) return r;
+      const copy = Object.assign({}, r);
+      lastPlan.forEach(f => {
+        if (f.maskable) copy[f.key] = f.header + ' ' + r.UniqueGroup;
       });
+      return copy;
+    });
 
     const workbook = buildWorkbookZip(finalRows, lastPlan);
     const buf = await workbook.generateAsync({
