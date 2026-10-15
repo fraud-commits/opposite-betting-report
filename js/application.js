@@ -161,11 +161,16 @@ BANKER_POSITIONS.push('dealer');
 const OPPOSITE_TRIPLES = [
   ['column_first', 'column_second', 'column_third'],
   ['column_1', 'column_2', 'column_3'],
+  ['column 1', 'column 2', 'column 3'],
   ['first column', 'second column', 'third column'],
+  ['column first', 'column second', 'column third'],
+  ['dozen first', 'dozen second', 'dozen third'],
   ['dozen_first', 'dozen_second', 'dozen_third'],
   ['dozen_1', 'dozen_2', 'dozen_3'],
+  ['dozen 1', 'dozen 2', 'dozen 3'],
   ['dozen1', 'dozen2', 'dozen3'],
   ['1st 12', '2nd 12', '3rd 12'],
+  ['first 12', 'second 12', 'third 12'],
   ['first dozen', 'second dozen', 'third dozen'],
   ['1st dozen', '2nd dozen', '3rd dozen'],
 ];
