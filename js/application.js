@@ -858,11 +858,32 @@ tableau.extensions.initializeAsync().then(function () {
 
       GenerateHtmalTable();
 
-      // дата в футере: "15 Oct 2026"
-      const d = new Date();
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const dateEl = document.getElementById('lfs-date');
-      if (dateEl) dateEl.textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+      // диапазон дат из данных (мин–макс по Round Time): "14 Oct 2026" или "14–15 Oct 2026"
+      (function () {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateEl = document.getElementById('lfs-date');
+        if (!dateEl) return;
+        let minT = Infinity, maxT = -Infinity;
+        rowData.forEach(r => {
+          const m = String(r.Createdate || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          if (!m) return;
+          const t = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])).getTime();
+          if (isNaN(t)) return;
+          if (t < minT) minT = t;
+          if (t > maxT) maxT = t;
+        });
+        const f = d => d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+        if (minT === Infinity) { // даты не распознались — показываем сегодня
+          const d = new Date();
+          dateEl.textContent = f(d);
+          return;
+        }
+        const min = new Date(minT), max = new Date(maxT);
+        if (min.toDateString() === max.toDateString()) dateEl.textContent = f(min);
+        else if (min.getMonth() === max.getMonth() && min.getFullYear() === max.getFullYear())
+          dateEl.textContent = min.getDate() + '–' + max.getDate() + ' ' + months[max.getMonth()] + ' ' + max.getFullYear();
+        else dateEl.textContent = f(min) + ' – ' + f(max);
+      })();
 
       let bankerFormatted = Banker.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
       $(".banker").html(bankerFormatted.replace(/[$]/g, ''));
