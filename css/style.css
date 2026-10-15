@@ -1,56 +1,428 @@
+/* ============================================
+   Live Fraud Solutions — Opposite Betting
+   Palette: #00987D / #00F4BB / #000E0B / #043927 / #EFFFFB
+   ============================================ */
 
-
-
-
-.function-bar{
-    margin: 15px;
+:root {
+  --lfs-green: #00987D;
+  --lfs-green-hover: #1AA28A;
+  --lfs-neon: #00F4BB;
+  --lfs-dark: #000E0B;
+  --lfs-sacramento: #043927;
+  --lfs-mint: #EFFFFB;
+  --lfs-border: #E3EDE8;
+  --lfs-text: #1F2B26;
+  --lfs-text-muted: #64746D;
+  --lfs-red: #F04438;
+  --lfs-pos: #0E9F6E;
 }
 
-.totals{
-    margin: 15px;
-    margin-left: 27px;
+* { box-sizing: border-box; }
+
+body {
+  background: #FBFCFB;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--lfs-text);
+  margin: 0;
+  font-size: 14px;
 }
 
-/* Кнопки брендов слева: аккуратная сетка с переносом */
-.butoon-container{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
+.hidden { display: none !important; }
+
+/* ---------- Top bar ---------- */
+
+.lfs-topbar {
+  background: linear-gradient(90deg, var(--lfs-sacramento), var(--lfs-dark));
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.butoon-container > button{
-    margin-right: 0;
+.lfs-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* Кнопки действий справа: сетка с переносом, выравнивание вправо */
-.load-ex{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: flex-end;
-    align-items: center;
+.lfs-back {
+  width: 20px;
+  height: 20px;
+  color: var(--lfs-neon);
 }
 
-.load-ex > button {
-    margin-right: 0;
+.lfs-title {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .08em;
 }
 
+.lfs-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  .buttons-excel{
-    display: none;
-  }
+.lfs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--lfs-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+}
 
+.lfs-btn:hover {
+  background: var(--lfs-green-hover);
+  box-shadow: 0 3px 10px rgba(0, 152, 125, .4);
+}
 
-  td,tr {
-    text-align: center;
-    vertical-align: top;
-    }
+.lfs-btn svg { width: 16px; height: 16px; }
 
-    table.dataTable.floatThead-table {
-        margin-top: 0px !important;
-      }
+.lfs-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s ease;
+}
 
-      .margin-l{
-        padding-left: 5px;
-      }
+.lfs-btn-ghost:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
+
+.lfs-dots { padding: 8px 10px; }
+
+/* dropdown menu */
+.lfs-menu-wrap { position: relative; }
+
+.lfs-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--lfs-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 14, 11, .15);
+  min-width: 230px;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.lfs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--lfs-text);
+  cursor: pointer;
+  transition: background .12s;
+  text-align: left;
+}
+
+.lfs-menu-item:hover { background: var(--lfs-mint); }
+.lfs-menu-item svg { width: 16px; height: 16px; color: var(--lfs-green); }
+
+/* ---------- Sub bar: stats + actions ---------- */
+
+.lfs-subbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lfs-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.lfs-stat-label {
+  font-size: 14px;
+  color: var(--lfs-text-muted);
+}
+
+.lfs-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--lfs-dark);
+}
+
+.lfs-stat-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--lfs-border);
+  margin: 0 10px;
+  align-self: center;
+}
+
+.lfs-subbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lfs-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: var(--lfs-text);
+  border: 1px solid var(--lfs-border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.lfs-btn-outline:hover {
+  border-color: var(--lfs-green);
+  color: var(--lfs-green);
+  background: var(--lfs-mint);
+}
+
+.lfs-btn-outline svg { width: 16px; height: 16px; }
+
+.lfs-count {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: var(--lfs-mint);
+  color: var(--lfs-green);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+/* ---------- Brand chips ---------- */
+
+.butoon-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 4px 20px 16px;
+}
+
+.lfs-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--lfs-border);
+  color: var(--lfs-text);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.lfs-chip:hover {
+  border-color: var(--lfs-green);
+  background: var(--lfs-mint);
+  box-shadow: 0 2px 6px rgba(0, 152, 125, .15);
+}
+
+.lfs-chip .chip-divider { color: #B9CCC4; font-weight: 400; }
+
+/* ---------- Table ---------- */
+
+.lfs-table-card {
+  margin: 0 20px;
+  border: 1px solid var(--lfs-border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: auto;
+}
+
+#my-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#my-table thead th {
+  background: #F3F6F5;
+  color: var(--lfs-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  white-space: nowrap;
+  border: none;
+  border-bottom: 1px solid var(--lfs-border);
+}
+
+#my-table tbody td {
+  padding: 13px 16px;
+  font-size: 14px;
+  border: none;
+  border-bottom: 1px solid #EEF2F0;
+  color: var(--lfs-text);
+  white-space: nowrap;
+}
+
+#my-table tbody tr:last-child td { border-bottom: none; }
+
+#my-table tbody tr:hover td { background: #F7FAF8; }
+
+/* money columns right-aligned (set via JS class) */
+#my-table td.num, #my-table th.num { text-align: right; }
+
+/* bet position badges */
+.pos-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.badge-banker { background: #E9E5FB; color: #6A5ACD; }
+.badge-player { background: #DAF6E9; color: #0B7A55; }
+.badge-neutral { background: #EEF1F0; color: var(--lfs-text-muted); }
+
+/* net numbers */
+.num-pos { color: var(--lfs-pos); font-weight: 600; }
+.num-neg { color: var(--lfs-red); font-weight: 600; }
+
+/* loading state */
+.lfs-loading-cell {
+  padding: 48px 0 !important;
+  text-align: center;
+}
+
+.lfs-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--lfs-green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 22px;
+  border-radius: 10px;
+}
+
+.lfs-spin {
+  width: 20px;
+  height: 20px;
+  animation: lfs-rotate 1s linear infinite;
+}
+
+@keyframes lfs-rotate { to { transform: rotate(360deg); } }
+
+/* ---------- Footer ---------- */
+
+.lfs-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 22px;
+  font-size: 13px;
+  color: var(--lfs-text-muted);
+}
+
+/* ---------- Popup ---------- */
+
+.lfs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 14, 11, .45);
+  backdrop-filter: blur(2px);
+}
+
+.lfs-popup-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lfs-popup {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 14, 11, .25);
+  padding: 28px;
+  max-width: 480px;
+  width: 90%;
+}
+
+.lfs-popup-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lfs-dark);
+  margin: 0 0 8px;
+}
+
+.lfs-popup-desc {
+  font-size: 13px;
+  color: var(--lfs-text-muted);
+  margin: 0 0 16px;
+}
+
+.lfs-popup .lfs-btn { margin-bottom: 14px; }
+
+/* initial centered loader */
+.lfs-initial {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(251, 252, 251, .85);
+  backdrop-filter: blur(2px);
+  color: var(--lfs-green);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+
+.lfs-initial .lfs-spin {
+  width: 42px;
+  height: 42px;
+}
+
+/* ---------- misc ---------- */
+
+.buttons-excel { display: none; }
+.dataTables_info { display: none; }
+table.dataTable.floatThead-table { margin-top: 0 !important; }
+.margin-l { padding-left: 5px; }
+
+/* player list table in popup */
+.player-list .table-striped tbody tr:nth-of-type(odd) { background: #F7FAF8; }
+.player-list td, .player-list th { text-align: center; padding: 8px; }

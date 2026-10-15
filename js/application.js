@@ -160,12 +160,15 @@ BANKER_POSITIONS.push('dealer');
 
 
 let currentBrand = "No Brand name selected";
-let TicketCount = 0;
+let currentBrandId = null;
 
-// Данные последней загрузки — нужны кнопке EXPORT ALL EXAMPLES
+// Данные последней загрузки — нужны кнопкам EXPORT EXCEL / EXPORT ALL EXAMPLES
 let lastRowData = [];
 let lastGroups = [];
 let lastPlan = [];
+// Что сейчас на экране (LOAD / EXAMPLE) — нужно кнопке EXPORT EXCEL
+let lastDisplayedRows = [];
+let lastDisplayedPlan = [];
 
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
@@ -207,6 +210,9 @@ function buildFieldPlan(sumdata) {
   return plan;
 }
 
+// Денежные поля — выравнивание вправо и форматирование
+const MONEY_KEYS = ['Amount', 'Net', 'AmountEUR', 'NetEUR'];
+
 // Построить <thead> таблицы по плану колонок
 function buildHeader(plan) {
   const tr = document.getElementById('header-row');
@@ -215,6 +221,7 @@ function buildHeader(plan) {
     const th = document.createElement('th');
     th.scope = 'col';
     th.textContent = f.header;
+    if (MONEY_KEYS.includes(f.key)) th.classList.add('num');
     tr.appendChild(th);
   });
 }
@@ -226,6 +233,9 @@ function renderTableRows(dataRows, plan) {
     $('#my-table').DataTable().clear().destroy();
   }
 
+  lastDisplayedRows = dataRows || [];
+  lastDisplayedPlan = plan || lastDisplayedPlan;
+
   const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
   tbody.innerHTML = '';
 
@@ -235,7 +245,28 @@ function renderTableRows(dataRows, plan) {
     plan.forEach((f, cellIndex) => {
       const cell = row.insertCell(cellIndex);
       const value = dataRows[i][f.key];
-      cell.innerHTML = value;
+      let html = value;
+
+      // Bet Position -> цветной бейдж
+      if (f.key === 'BetPosition') {
+        const side = isBanker(value) ? 'badge-banker' : isPlayer(value) ? 'badge-player' : 'badge-neutral';
+        html = '<span class="pos-badge ' + side + '">' + value + '</span>';
+      }
+      // деньги -> формат 0.00, NET со знаком и цветом
+      else if (MONEY_KEYS.includes(f.key)) {
+        const num = Number(String(value).replace(/,/g, ''));
+        if (value !== '' && !isNaN(num)) {
+          cell.classList.add('num');
+          const abs = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          if (f.key === 'Net' || f.key === 'NetEUR') {
+            html = '<span class="' + (num < 0 ? 'num-neg' : 'num-pos') + '">' + (num < 0 ? '-' : '+') + abs + '</span>';
+          } else {
+            html = num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          }
+        }
+      }
+
+      cell.innerHTML = html;
 
       if (f.maskable) {
         cell.setAttribute("data-UniqueGroup", dataRows[i].UniqueGroup);
@@ -245,6 +276,11 @@ function renderTableRows(dataRows, plan) {
       }
     });
   }
+
+  // футер: "N records · M rounds"
+  const rounds = new Set(dataRows.map(r => r.Gameid)).size;
+  const recEl = document.getElementById('lfs-records');
+  if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds';
 }
 
 // Выборка example-раундов из переданных строк (логика кнопки EXAMPLE)
@@ -421,6 +457,31 @@ function buildWorkbookZip(rows, plan) {
   return zip;
 }
 
+// Общее для всех Excel-скачиваний: timestamp, безопасное имя, скачивание blob
+function getTimestamp() {
+  const now = new Date();
+  return now.getFullYear() + "-" +
+    String(now.getMonth() + 1).padStart(2, '0') + "-" +
+    String(now.getDate()).padStart(2, '0') + "_" +
+    String(now.getHours()).padStart(2, '0') + "-" +
+    String(now.getMinutes()).padStart(2, '0') + "-" +
+    String(now.getSeconds()).padStart(2, '0');
+}
+
+function sanitizeFilePart(s) {
+  return String(s || '').replace(/[\\\/:*?"<>|]/g, '_').trim();
+}
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 40000);
+}
+
 // Скачать ZIP: внутри отдельный Excel-файл на каждого партнёра
 // (множественные скачивания в Tableau блокируются — поэтому один архив)
 async function exportExamplesPerPartner() {
@@ -433,13 +494,7 @@ async function exportExamplesPerPartner() {
     return;
   }
 
-  const now = new Date();
-  const timestamp = now.getFullYear() + "-" +
-    String(now.getMonth() + 1).padStart(2, '0') + "-" +
-    String(now.getDate()).padStart(2, '0') + "_" +
-    String(now.getHours()).padStart(2, '0') + "-" +
-    String(now.getMinutes()).padStart(2, '0') + "-" +
-    String(now.getSeconds()).padStart(2, '0');
+  const timestamp = getTimestamp();
 
   const zip = new JSZip();
   const usedNames = new Set();
@@ -473,9 +528,8 @@ async function exportExamplesPerPartner() {
     });
 
     // Формат: Example_Partner_SubPartner_DateTime
-    const sanitize = s => String(s).replace(/[\\\/:*?"<>|]/g, '_').trim();
-    let baseName = 'Example_' + sanitize(group.PartnerName || group.Uniqueidentifier);
-    if (group.SubPartnerName) baseName += '_' + sanitize(group.SubPartnerName);
+    let baseName = 'Example_' + sanitizeFilePart(group.PartnerName || group.Uniqueidentifier);
+    if (group.SubPartnerName) baseName += '_' + sanitizeFilePart(group.SubPartnerName);
 
     let fileName = baseName + '_' + timestamp + '.xlsx';
     let n = 2;
@@ -489,13 +543,53 @@ async function exportExamplesPerPartner() {
   }
 
   const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Examples_per_Partner_LFS_' + timestamp + '.zip';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 40000);
+  downloadBlob(blob, 'Examples_per_Partner_' + timestamp + '.zip');
+}
+
+// Маскировка чужих брендов так же, как на экране (для EXPORT EXCEL)
+function applyCurrentMask(rows, plan) {
+  if (!currentBrandId) return rows;
+  return rows.map(r => {
+    if (r.Uniqueidentifier === currentBrandId) return r;
+    const copy = Object.assign({}, r);
+    plan.forEach(f => {
+      if (f.maskable) copy[f.key] = (f.maskLabel || f.header) + ' ' + r.UniqueGroup;
+    });
+    return copy;
+  });
+}
+
+// EXPORT EXCEL — тот же генератор и формат имени, что у EXPORT ALL EXAMPLES
+async function exportCurrentViewExcel() {
+  if (!lastDisplayedRows.length || !lastDisplayedPlan.length) {
+    alert('Сначала нажмите LOAD');
+    return;
+  }
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip library not loaded');
+    return;
+  }
+
+  const rows = applyCurrentMask(lastDisplayedRows, lastDisplayedPlan);
+  const workbook = buildWorkbookZip(rows, lastDisplayedPlan);
+  const buf = await workbook.generateAsync({
+    type: 'arraybuffer',
+    compression: 'DEFLATE',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const brandPart = currentBrandId ? currentBrand : 'All';
+  downloadBlob(blob, 'Example_' + sanitizeFilePart(brandPart) + '_' + getTimestamp() + '.xlsx');
+}
+
+function showGlobalLoader() {
+  const el = document.getElementById('lfs-initial-loader');
+  if (el) el.classList.remove('hidden');
+}
+
+function hideGlobalLoader() {
+  const el = document.getElementById('lfs-initial-loader');
+  if (el) el.classList.add('hidden');
 }
 
 
@@ -508,6 +602,7 @@ tableau.extensions.initializeAsync().then(function () {
 
   function LoadGameExample() {
     const worksheet = getWorksheet();
+    showGlobalLoader();
 
     worksheet.getSummaryDataAsync().then(function (sumdata) {
       const data = sumdata.data;
@@ -563,21 +658,24 @@ tableau.extensions.initializeAsync().then(function () {
             SubPartnerName: String(subPartnerVal)
           });
 
-          const button = $("<button/>", {
+          const chip = $("<button/>", {
             "data-Uniqueidentifier": uid,
             "data-UniqueGroup": String.fromCharCode(65 + Uniqueidentifier.length),
-            id: "333"
-          }).append(
-            '<a href="#_" class="inline-flex overflow-hidden text-white bg-[#043927] rounded group">\n' +
-            '  <span class="px-3.5 py-2 text-white bg-[#00987D] group-hover:bg-[#1AA28A] flex items-center justify-center">\n' +
-            '    <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>\n' +
-            '<p class="margin-l"> ' + partnerVal + '</p>\n' +
-            '  </span>\n' +
-            '  <span class="pl-4 pr-5 py-2.5">' + subPartnerVal + '</span>\n' +
-            '</a>'
+            id: "333",
+            class: "lfs-chip"
+          });
+          chip.append(
+            $('<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00987D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'),
+            $('<span class="chip-partner"/>').text(partnerVal)
           );
+          if (subPartnerVal) {
+            chip.append(
+              $('<span class="chip-divider"/>').text('|'),
+              $('<span/>').text(subPartnerVal)
+            );
+          }
 
-          $(".butoon-container").append(button);
+          $(".butoon-container").append(chip);
         }
 
         // суммы BANKER / PLAYER
@@ -657,6 +755,12 @@ tableau.extensions.initializeAsync().then(function () {
 
       GenerateHtmalTable();
 
+      // дата в футере: "15 Oct 2026"
+      const d = new Date();
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const dateEl = document.getElementById('lfs-date');
+      if (dateEl) dateEl.textContent = d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+
       let bankerFormatted = Banker.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
       $(".banker").html(bankerFormatted.replace(/[$]/g, ''));
 
@@ -671,6 +775,7 @@ tableau.extensions.initializeAsync().then(function () {
       $('button[data-Uniqueidentifier]').off("click").on("click", function () {
         var clickedUniqueId = $(this).attr('data-Uniqueidentifier');
         var clickedGroup = Uniqueidentifier.find(g => g.Uniqueidentifier === clickedUniqueId);
+        currentBrandId = clickedUniqueId;
         currentBrand = clickedGroup
           ? clickedGroup.PartnerName + (clickedGroup.SubPartnerName ? '_' + clickedGroup.SubPartnerName : '')
           : clickedUniqueId;
@@ -685,62 +790,41 @@ tableau.extensions.initializeAsync().then(function () {
         });
       });
 
+      hideGlobalLoader();
+    }).catch(function (err) {
+      hideGlobalLoader();
+      console.error(err);
+      alert('Load failed: ' + (err && err.message ? err.message : err));
     });
   }
 
 
   $("#load").on("click", function () {
+    currentBrand = "No Brand name selected";
+    currentBrandId = null;
     $(".butoon-container").empty();
     LoadGameExample();
   });
 });
 
 
-function LoadDataTables() {
-  TicketCount += 1;
-
-  // Get current timestamp in 24-hour format with seconds
-  let now = new Date();
-  let timestamp = now.getFullYear() + "-" +
-    String(now.getMonth() + 1).padStart(2, '0') + "-" +
-    String(now.getDate()).padStart(2, '0') + "_" +
-    String(now.getHours()).padStart(2, '0') + "-" +
-    String(now.getMinutes()).padStart(2, '0') + "-" +
-    String(now.getSeconds()).padStart(2, '0');
-
-  $('#my-table').DataTable({
-    "searching": false,
-    "bPaginate": false,
-    "ordering": false,
-    stateSave: true,
-    "bDestroy": true,
-    dom: 'Bfrtip',
-    buttons: [{
-      extend: 'excelHtml5',
-      title: '',
-      filename: "Example_" + currentBrand + "_LFS_" + TicketCount + "_" + timestamp,
-      text: 'Excel',
-
-      customize: function (xlsx) {
-        var sheet = xlsx.xl.worksheets['sheet1.xml'];
-
-        // jQuery selector to add a border
-        $('row c[r]', sheet).attr('s', '25');
-        $('row:first c', sheet).attr('s', '47');
-      },
-    }]
-  });
-}
-
-
 $("#export-btn").on("click", function () {
-  LoadDataTables();
-  $(".buttons-excel").trigger("click");
+  exportCurrentViewExcel();
 });
 
 
 $("#export-all-btn").on("click", function () {
   exportExamplesPerPartner();
+});
+
+
+// меню "..." в шапке
+$("#lfs-menu-btn").on("click", function (e) {
+  e.stopPropagation();
+  $("#lfs-menu").toggleClass("hidden");
+});
+$(document).on("click", function () {
+  $("#lfs-menu").addClass("hidden");
 });
 
 
