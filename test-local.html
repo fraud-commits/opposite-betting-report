@@ -120,17 +120,11 @@
 </div>
 
 <script>
-const MOCK_COLS = ['SECOND(Round Time)','Round Id','Casino Code','Brand Code','Player Id','Username','Game Type','Table Id','Bet Position','Currency','SUM(BET)','SUM(NET)'];
+const MOCK_COLS = ['Round Start Time','Round Id','Partner Id','Sub Partner Id','Player Id','Username','Game Type','Table Id','Bet Position','Odds','Bet Type','Currency','BET','NET'];
 const MOCK_ROWS = [
-  ['15/10/2026 3:25:17 AM','1754623215','c1351','b33942','36909784','Fulfilled Ladyfish','Bet On Teen Patti','botp_1','PLAYER B','SC',100,95],
-  ['15/10/2026 3:25:17 AM','1754623215','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',100,-100],
-  ['15/10/2026 3:26:13 AM','1754601995','c1351','b33942','36909784','Fulfilled Ladyfish','Bet On Teen Patti','botp_1','PLAYER B','SC',16,15.2],
-  ['15/10/2026 3:26:13 AM','1754601995','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',16,-16],
-  ['15/10/2026 3:29:03 AM','1754651083','c106','b4418','34691233','Euphoria Azurite','Bet On Teen Patti','botp_1','PLAYER B','SC',118,-118],
-  ['15/10/2026 3:29:03 AM','1754651083','c2031','b34271','40150387','Good Welder','Bet On Teen Patti','botp_1','PLAYER A','SC',118.03,112.12],
-  ['15/10/2026 7:57:16 AM','AAA111','483','d73d9d79','u1','Roulette Player','Roulette','LC1105','COLUMN_FIRST','EUR',25,50],
-  ['15/10/2026 7:57:16 AM','AAA111','483','d73d9d79','u2','Roulette Player','Roulette','LC1105','COLUMN_SECOND','EUR',25,-25],
-  ['15/10/2026 7:57:16 AM','AAA111','483','d73d9d79','u3','Roulette Player','Roulette','LC1105','COLUMN_THIRD','EUR',25,-25],
+  ['15/10/2026 2:42:20 AM','YDT1261015024220','machub','21ex2','21ex2:Gdmishra2543_6532031','Gdmishra2543_6532031','Dragon Tiger','ATGYDT101','Dragon',2,'BACK','INR',25500,-25500],
+  ['15/10/2026 2:44:00 AM','YDT1261015024400','machub','21ex2','21ex2:Gdmishra2543_6532031','Gdmishra2543_6532031','Dragon Tiger','ATGYDT101','Tiger',2,'BACK','INR',36000,-36000],
+  ['15/10/2026 2:44:52 AM','YDT1261015024452','machub','21ex2','21ex2:Gdmishra2543_6532031','Gdmishra2543_6532031','Dragon Tiger','ATGYDT101','Tiger',2,'BACK','INR',50000,50000],
 ];
 window.tableau = { extensions: { initializeAsync: () => Promise.resolve(),
   dashboardContent: { dashboard: { worksheets: [{ name: 'Opposite',
