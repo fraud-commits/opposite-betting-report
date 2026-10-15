@@ -174,9 +174,17 @@ function buildFieldPlan(sumdata) {
 
   sumdata.columns.forEach((col, idx) => {
     const name = String(col.fieldName).trim();
+    // Tableau может оборачивать имя в агрегацию: SUM(BET), SECOND(Round Time) и т.д.
+    // — пробуем матчить и полное имя, и внутреннее
+    const aggMatch = name.match(/^[A-Za-z]+\((.*)\)$/);
+    const innerName = aggMatch ? aggMatch[1].trim() : null;
+
     const field = FIELDS.find(f =>
       !usedKeys.has(f.key) &&
-      f.aliases.some(a => a.toLowerCase() === name.toLowerCase())
+      f.aliases.some(a =>
+        a.toLowerCase() === name.toLowerCase() ||
+        (innerName && a.toLowerCase() === innerName.toLowerCase())
+      )
     );
 
     if (field) {
