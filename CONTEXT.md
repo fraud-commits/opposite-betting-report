@@ -14,7 +14,7 @@
 При каждом изменении кода поднимать версию в ТРЁХ местах (Tableau кеширует):
 - `MAIN.trex`: `<url>https://fraud-commits.github.io/opposite-betting-report/?v=N</url>`
 - `index.html`: `css/style.css?v=N` и `js/application.js?v=N`
-Текущая задеплоенная версия: **v=35** (MAIN.trex без версии — грузит всегда свежий index.html).
+Текущая задеплоенная версия: **v=37** (MAIN.trex без версии — грузит всегда свежий index.html).
 
 ## Архитектура js/application.js
 1. **FIELDS** — конфиг полей: `key`, `aliases` (имена колонок клиентов, регистр не важен), `formatted`, `numeric`, `maskable`. Порядок таблицы = порядок колонок в листе клиента.
