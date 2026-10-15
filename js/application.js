@@ -336,6 +336,15 @@ function renderTableRows(dataRows, plan) {
   } catch (e) { withoutOpposite = 0; }
   const recEl = document.getElementById('lfs-records');
   if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
+  const nooppEl = document.getElementById('lfs-noopp');
+  if (nooppEl) {
+    if (withoutOpposite > 0) {
+      nooppEl.style.display = '';
+      nooppEl.textContent = '⚠ ' + withoutOpposite + ' without opposite';
+    } else {
+      nooppEl.style.display = 'none';
+    }
+  }
 }
 
 // Выборка example-раундов из переданных строк (логика кнопки EXAMPLE)

@@ -194,6 +194,20 @@ body {
   align-self: center;
 }
 
+.lfs-warn-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  margin-left: 12px;
+  white-space: nowrap;
+  align-self: center;
+}
+
 .lfs-subbar-actions {
   display: flex;
   align-items: center;
