@@ -327,10 +327,15 @@ function renderTableRows(dataRows, plan) {
     });
   }
 
-  // футер: "N records · M rounds"
+  // футер: "N records · M rounds · K without opposite"
   const rounds = new Set(dataRows.map(r => r.Gameid)).size;
+  let withoutOpposite = 0;
+  try {
+    const exIds = new Set(buildExampleRows(dataRows).map(r => r.Gameid));
+    new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exIds.has(g)) withoutOpposite++; });
+  } catch (e) { withoutOpposite = 0; }
   const recEl = document.getElementById('lfs-records');
-  if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds';
+  if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
 }
 
 // Выборка example-раундов из переданных строк (логика кнопки EXAMPLE)
