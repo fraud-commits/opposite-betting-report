@@ -378,15 +378,26 @@ function buildWorkbookZip(rows, plan) {
   const header = plan.map(f => f.header);
   const all = [header].concat(rows.map(r => plan.map(f => r[f.key])));
 
-  // автоширина колонок по самому длинному значению
+  // автоширина колонок по самому длинному значению;
+  // денежные колонки — компактно, по длине чисел в формате 0.00
   let colsXml = '<cols>';
   header.forEach((h, ci) => {
+    const isMoneyCol = MONEY_KEYS.includes(plan[ci] && plan[ci].key);
     let maxLen = String(h).length;
     all.forEach(r => {
-      const len = String(r[ci] === null || r[ci] === undefined ? '' : r[ci]).length;
-      if (len > maxLen) maxLen = len;
+      const raw = r[ci];
+      let s;
+      if (isMoneyCol && raw !== '' && raw !== null && raw !== undefined) {
+        const n = Number(String(raw).replace(/,/g, ''));
+        s = !isNaN(n) ? n.toFixed(2) : String(raw);
+      } else {
+        s = String(raw === null || raw === undefined ? '' : raw);
+      }
+      if (s.length > maxLen) maxLen = s.length;
     });
-    const width = Math.min(Math.max(Math.round(maxLen * 1.15) + 2, 8), 45);
+    const width = isMoneyCol
+      ? Math.min(Math.max(maxLen + 1, 8), 20)
+      : Math.min(Math.max(Math.round(maxLen * 1.15) + 2, 8), 45);
     colsXml += '<col min="' + (ci + 1) + '" max="' + (ci + 1) + '" width="' + width + '" customWidth="1"/>';
   });
   colsXml += '</cols>';
