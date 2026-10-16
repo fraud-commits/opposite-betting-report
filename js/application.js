@@ -171,6 +171,10 @@ const OPPOSITE_TRIPLES = [
   ['dozen1', 'dozen2', 'dozen3'],
   ['1st 12', '2nd 12', '3rd 12'],
   ['first 12', 'second 12', 'third 12'],
+  ['first_12', 'second_12', 'third_12'],
+  ['1-12', '13-24', '25-36'],
+  ['1 to 12', '13 to 24', '25 to 36'],
+  ['1to12', '13to24', '25to36'],
   ['first dozen', 'second dozen', 'third dozen'],
   ['1st dozen', '2nd dozen', '3rd dozen'],
 ];
