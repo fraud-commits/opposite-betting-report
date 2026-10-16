@@ -971,6 +971,16 @@ $("#export-btn").on("click", function () {
 });
 
 
+// меню "..." в шапке
+$("#lfs-menu-btn").on("click", function (e) {
+  e.stopPropagation();
+  $("#lfs-menu").toggleClass("hidden");
+});
+$(document).on("click", function () {
+  $("#lfs-menu").addClass("hidden");
+});
+
+
 // Клик по пилюлю "without opposite": показать только такие раунды / вернуть всё
 $("#lfs-noopp").on("click", function () {
   if (!lastRowData.length) return;
