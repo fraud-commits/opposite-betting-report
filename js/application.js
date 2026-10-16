@@ -801,15 +801,19 @@ tableau.extensions.initializeAsync().then(function () {
           $(".butoon-container").append(chip);
         }
 
-        // суммы BANKER / PLAYER / TRIPLE (тройные: column, dozen)
+        // суммы по сторонам: пары — в свои стороны,
+        // тройки — каждая сторона в свою (first→First, second→Second, third→Third)
         const betPos = val(i, betPositionField);
         const amount = Number(val(i, amountField)) || 0;
         if (isBanker(betPos)) {
           Banker += amount;
         } else if (isPlayer(betPos)) {
           Player += amount;
-        } else if (isTriple(betPos)) {
-          Triple += amount;
+        } else {
+          const tSide = tripleSide(betPos);
+          if (tSide === 0) Banker += amount;
+          else if (tSide === 1) Player += amount;
+          else if (tSide === 2) Triple += amount;
         }
 
         // строка данных: все колонки плана + служебные поля
