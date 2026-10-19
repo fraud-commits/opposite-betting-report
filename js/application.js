@@ -182,8 +182,8 @@ const OPPOSITE_TRIPLES = [
 // Player list по умолчанию группируется по Partner Id.
 // Исключения — по SubPartner, если совпало что-то из условий:
 const PLAYER_GROUP_OVERRIDES = {
-  dashboards: ['mac88'],        // подстрока в имени дашборда
-  partners: ['machub', 'gapmac88'], // или такие значения Partner Id в данных
+  dashboards: ['mac88', 'royalgaming', 'rg opposite'], // подстрока в имени дашборда
+  partners: ['machub', 'gapmac88', 'rggap', 'rgst8'], // или такие значения Partner Id в данных
 };
 
 // ---------- КОНЕЦ КОНФИГУРАЦИИ ----------
