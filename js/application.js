@@ -179,6 +179,31 @@ const OPPOSITE_TRIPLES = [
   ['1st dozen', '2nd dozen', '3rd dozen'],
 ];
 
+// Player list по умолчанию группируется по Partner Id.
+// Исключения — по SubPartner, если совпало что-то из условий:
+const PLAYER_GROUP_OVERRIDES = {
+  dashboards: ['mac88'],        // подстрока в имени дашборда
+  partners: ['machub', 'gapmac88'], // или такие значения Partner Id в данных
+};
+
+// ---------- КОНЕЦ КОНФИГУРАЦИИ ----------
+
+
+// Поле группировки для Player List: по умолчанию Partner,
+// по SubPartner — если дашборд в overrides или в данных встретился partner из списка
+function getPlayerGroupField(rowData) {
+  const dashName = (tableau.extensions.dashboardContent.dashboard.name || '').toLowerCase();
+  if (PLAYER_GROUP_OVERRIDES.dashboards.some(k => dashName.includes(k))) return 'SubPartner';
+  if (rowData.some(r => PLAYER_GROUP_OVERRIDES.partners.includes(String(r.Partner).toLowerCase()))) return 'SubPartner';
+  return 'Partner';
+}
+
+function uniquePlayerKey(item, groupField) {
+  if (groupField === 'SubPartner') return String(item.UserId) + '/' + String(item.SubPartner);
+  return String(item.UserId) + '/' + String(item.Partner);
+}
+
+
 // ---------- КОНЕЦ КОНФИГУРАЦИИ ----------
 
 
@@ -839,7 +864,9 @@ tableau.extensions.initializeAsync().then(function () {
 
 
       function GetPlayerList() {
-        let uniqueArray = [...new Set(rowData.map(item => item.UniquePlayerID))];
+        // группировка: по Partner, кроме исключений (Mac88 — по SubPartner)
+        const groupField = getPlayerGroupField(rowData);
+        let uniqueArray = [...new Set(rowData.map(item => uniquePlayerKey(item, groupField)))];
 
         console.log(uniqueArray);
 
