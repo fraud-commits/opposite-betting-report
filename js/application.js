@@ -182,7 +182,9 @@ const OPPOSITE_TRIPLES = [
 // Player list по умолчанию группируется по Partner Id.
 // Исключения — по SubPartner, если совпало что-то из условий:
 const PLAYER_GROUP_OVERRIDES = {
-  dashboards: ['mac88', 'royalgaming', 'rg opposite'], // подстрока в имени дашборда
+  // подстрока в имени дашборда; короткие ключи (<=3 симв.) — как целое слово,
+  // чтобы 'rg' не совпал внутри слов вроде 'Target'
+  dashboards: ['mac88', 'royalgaming', 'rg'],
   partners: ['machub', 'gapmac88', 'rggap', 'rgst8'], // или такие значения Partner Id в данных
 };
 
@@ -193,7 +195,8 @@ const PLAYER_GROUP_OVERRIDES = {
 // по SubPartner — если дашборд в overrides или в данных встретился partner из списка
 function getPlayerGroupField(rowData) {
   const dashName = (tableau.extensions.dashboardContent.dashboard.name || '').toLowerCase();
-  if (PLAYER_GROUP_OVERRIDES.dashboards.some(k => dashName.includes(k))) return 'SubPartner';
+  if (PLAYER_GROUP_OVERRIDES.dashboards.some(k =>
+    k.length <= 3 ? new RegExp('\\b' + k + '\\b').test(dashName) : dashName.includes(k))) return 'SubPartner';
   if (rowData.some(r => PLAYER_GROUP_OVERRIDES.partners.includes(String(r.Partner).toLowerCase()))) return 'SubPartner';
   return 'Partner';
 }
