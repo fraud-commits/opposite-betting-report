@@ -1061,31 +1061,56 @@ $("#export-all-btn").on("click", function () {
 
 
 // ---------- Быстрое копирование Player List (один клик, без попапа) ----------
-// Tableau embedded browser может не поддерживать navigator.clipboard,
-// поэтому есть fallback через временный textarea + execCommand('copy')
-function copyTextToClipboard(text, onDone) {
-  const fallback = function () {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e) {
-      return false;
-    }
-  };
+// В Tableau embedded browser navigator.clipboard часто резолвится, но молча
+// ничего не пишет (нет фокуса документа). Поэтому основной путь — execCommand,
+// а clipboard API и кнопка DataTables — как запасные.
+function copyViaExecCommand(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    // readonly — чтобы не вылезала клавиатура; НЕ ставим opacity:0,
+    // иначе некоторые движки отказываются выделять текст
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) return true;
+  } catch (e) { /* пробуем дальше */ }
+  return false;
+}
 
+function copyTextToClipboard(text, onDone) {
+  // 1) execCommand — синхронно и надёжно во встроенном браузере
+  if (copyViaExecCommand(text)) { onDone(true); return; }
+
+  // 2) navigator.clipboard — только если execCommand не сработал
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function () { onDone(true); }, function () { onDone(fallback()); });
-  } else {
-    onDone(fallback());
+    navigator.clipboard.writeText(text).then(
+      function () { onDone(true); },
+      function () { onDone(copyViaDataTables()); }
+    );
+    return;
+  }
+
+  // 3) последний шанс — скрытая кнопка DataTables (тот же механизм, что в попапе)
+  onDone(copyViaDataTables());
+}
+
+// Запасной путь: триггерим скрытую кнопку copy у таблицы игроков
+function copyViaDataTables() {
+  try {
+    const btn = $('#myTable').closest('.dataTables_wrapper').find('.buttons-copy');
+    if (!btn.length) return false;
+    btn.trigger('click');
+    return true;
+  } catch (e) {
+    return false;
   }
 }
 
