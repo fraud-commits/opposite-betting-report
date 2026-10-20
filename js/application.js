@@ -1022,17 +1022,6 @@ $(document).on("click", function () {
   $("#lfs-menu").addClass("hidden");
 });
 
-// пункт меню "View Player List" — посмотреть список перед копированием
-$("#view-players-btn").on("click", function () {
-  $("#lfs-menu").addClass("hidden");
-  if (!lastRowData.length) {
-    alert('No data loaded yet. Press Load first.');
-    return;
-  }
-  // список уже построен в попапе (GetPlayerList), просто открываем
-  openPopup('Player List', 'Please find below the formatted list of players who participated in the opposite gaming session');
-});
-
 // кнопка "Copy Players" — копирует список сразу, без попапа
 $("#copy-players-btn").on("click", function () {
   copyPlayerListNow(this);
