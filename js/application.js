@@ -219,6 +219,8 @@ let nooppOnly = false;
 let lastRowData = [];
 let lastGroups = [];
 let lastPlan = [];
+// Последний построенный Player List — нужен кнопке быстрого копирования
+let lastPlayerList = [];
 // Что сейчас на экране (LOAD / EXAMPLE) — нужно кнопке EXPORT EXCEL
 let lastDisplayedRows = [];
 let lastDisplayedPlan = [];
@@ -873,6 +875,8 @@ tableau.extensions.initializeAsync().then(function () {
 
         console.log(uniqueArray);
 
+        lastPlayerList = uniqueArray;
+
         $(".player-list-count").html(uniqueArray.length);
 
         $('#myTable').DataTable({
@@ -1029,6 +1033,11 @@ $("#view-players-btn").on("click", function () {
   openPopup('Player List', 'Please find below the formatted list of players who participated in the opposite gaming session');
 });
 
+// кнопка "Copy Players" — копирует список сразу, без попапа
+$("#copy-players-btn").on("click", function () {
+  copyPlayerListNow(this);
+});
+
 // закрытие попапа: крестик, клик по подложке, Escape
 $("#popupClose").on("click", closePopup);
 $("#popupOverlay").on("click", closePopup);
@@ -1060,6 +1069,54 @@ $("#export-all-btn").on("click", function () {
 
 
 
+
+
+// ---------- Быстрое копирование Player List (один клик, без попапа) ----------
+// Tableau embedded browser может не поддерживать navigator.clipboard,
+// поэтому есть fallback через временный textarea + execCommand('copy')
+function copyTextToClipboard(text, onDone) {
+  const fallback = function () {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { onDone(true); }, function () { onDone(fallback()); });
+  } else {
+    onDone(fallback());
+  }
+}
+
+// Копирует текущий Player List и показывает фидбек на кнопке
+function copyPlayerListNow(btn) {
+  if (!lastPlayerList.length) {
+    alert('No data loaded yet. Press Load first.');
+    return;
+  }
+  const label = btn.querySelector('.copy-label') || btn;
+  copyTextToClipboard(lastPlayerList.join('\n'), function (ok) {
+    const old = label.textContent;
+    label.textContent = ok ? 'Copied ' + lastPlayerList.length + '!' : 'Copy failed';
+    btn.classList.toggle('is-error', !ok);
+    setTimeout(function () {
+      label.textContent = old;
+      btn.classList.remove('is-error');
+    }, 2000);
+  });
+}
 
 
 function closePopup() {

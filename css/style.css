@@ -511,8 +511,13 @@ body.is-loading .lfs-footer {
 table.dataTable.floatThead-table { margin-top: 0 !important; }
 .margin-l { padding-left: 5px; }
 
-/* player list table in popup */
-.player-list {
+.lfs-copy-btn.is-error {
+  border-color: #DC2626;
+  color: #DC2626;
+  background: #FEF2F2;
+}
+
+/* player list table in popup */.player-list {
   max-height: 340px;
   overflow-y: auto;
   border: 1px solid #E3EDE9;
