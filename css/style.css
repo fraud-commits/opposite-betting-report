@@ -517,14 +517,22 @@ table.dataTable.floatThead-table { margin-top: 0 !important; }
   background: #FEF2F2;
 }
 
-/* player list table in popup */
+/* player list in popup — обычный текст (один узел), не таблица/список
+   элементов: так большие списки рендерятся мгновенно */
 .player-list {
   max-height: 340px;
   overflow-y: auto;
   border: 1px solid #E3EDE9;
   border-radius: 10px;
+  background: #F7FAF8;
+  padding: 4px 0;
 }
-/* шапка в списке игроков не нужна — одна колонка без заголовка */
-.player-list thead { display: none; }
-.player-list .table-striped tbody tr:nth-of-type(odd) { background: #F7FAF8; }
-.player-list td { text-align: center; padding: 8px; }
+#playerList {
+  white-space: pre-wrap;
+  word-break: break-all;
+  text-align: center;
+  font-size: 13px;
+  line-height: 26px;
+  color: var(--lfs-dark);
+  font-family: inherit;
+}

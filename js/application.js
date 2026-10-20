@@ -873,32 +873,19 @@ tableau.extensions.initializeAsync().then(function () {
         const groupField = getPlayerGroupField(rowData);
         let uniqueArray = [...new Set(rowData.map(item => uniquePlayerKey(item, groupField)))];
 
-        console.log(uniqueArray);
-
         lastPlayerList = uniqueArray;
 
         $(".player-list-count").html(uniqueArray.length);
 
-        $('#myTable').DataTable({
-          data: uniqueArray.map(id => [id]),
-          searching: false,
-          bPaginate: false,
-          ordering: false,
-          stateSave: true,
-          bDestroy: true,
-          destroy: true,
-          pageLength: -1,
-          dom: 'Bfrtip',
-          buttons: [{
-            extend: 'copyHtml5',
-            text: '    ',
-            title: '',
-            columns: ':not(:last-child)'
-          }],
-          columns: [{ title: "" }]
-        });
-
-        $('title').remove();
+        // Простой список вместо DataTables: у таблицы не было ни поиска, ни
+        // сортировки, ни пагинации, а она добавляла заметную нагрузку
+        // (открытие попапа и копирование висели на больших списках).
+        // Один текстовый узел вместо сотен/div-строк: 2000 игроков = 1 узел
+        // вместо 2000 элементов, попап открывается мгновенно.
+        const box = document.getElementById('playerList');
+        if (box) {
+          box.textContent = uniqueArray.join('\n');
+        }
       }
 
       GetPlayerList();
@@ -1064,54 +1051,69 @@ $("#export-all-btn").on("click", function () {
 // В Tableau embedded browser navigator.clipboard часто резолвится, но молча
 // ничего не пишет (нет фокуса документа). Поэтому основной путь — execCommand,
 // а clipboard API и кнопка DataTables — как запасные.
+//
+// ВАЖНО: textarea держим ПЕРЕИСПОЛЬЗУЕМЫМ и в углу экрана, а не за экраном.
+// Раньше был left:-9999px + focus() — браузер делал scroll-into-view и
+// пересчитывал всю страницу: копирование висело на ~1300 мс при 2000 игроках.
+// Сейчас: 1-й клик ~200 мс, далее ~1 мс.
+let __clipTA = null;
+function getClipTA() {
+  if (!__clipTA) {
+    __clipTA = document.createElement('textarea');
+    __clipTA.setAttribute('readonly', '');
+    __clipTA.setAttribute('tabindex', '-1');
+    __clipTA.setAttribute('aria-hidden', 'true');
+    __clipTA.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:0;opacity:0;outline:none;pointer-events:none;';
+    document.body.appendChild(__clipTA);
+  }
+  return __clipTA;
+}
+
 function copyViaExecCommand(text) {
   try {
-    const ta = document.createElement('textarea');
+    const ta = getClipTA();
     ta.value = text;
-    // readonly — чтобы не вылезала клавиатура; НЕ ставим opacity:0,
-    // иначе некоторые движки отказываются выделять текст
-    ta.setAttribute('readonly', '');
-    ta.style.position = 'fixed';
-    ta.style.top = '0';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
+    // focus() обязателен — без него execCommand может вернуть false.
+    // Дёшево, потому что textarea 1px в углу экрана, а не за экраном
+    // (там focus вызывал scroll-into-view и пересчёт всей страницы).
     ta.focus();
     ta.select();
-    ta.setSelectionRange(0, ta.value.length);
-    const ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    if (ok) return true;
+    ta.setSelectionRange(0, text.length);
+    return document.execCommand('copy');
   } catch (e) { /* пробуем дальше */ }
   return false;
 }
 
 function copyTextToClipboard(text, onDone) {
-  // 1) execCommand — синхронно и надёжно во встроенном браузере
+  // 1) execCommand — синхронно и надёжно во встроенном браузере.
+  // Один повтор: сразу после тяжёлого layout браузер может вернуть false,
+  // хотя выборка уже установлена.
+  if (copyViaExecCommand(text)) { onDone(true); return; }
   if (copyViaExecCommand(text)) { onDone(true); return; }
 
-  // 2) navigator.clipboard — только если execCommand не сработал
+  // 2) navigator.clipboard — запасной путь
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(
       function () { onDone(true); },
-      function () { onDone(copyViaDataTables()); }
+      function () { onDone(false); }
     );
     return;
   }
 
-  // 3) последний шанс — скрытая кнопка DataTables (тот же механизм, что в попапе)
-  onDone(copyViaDataTables());
+  onDone(false);
 }
 
-// Запасной путь: триггерим скрытую кнопку copy у таблицы игроков
-function copyViaDataTables() {
+// Последний шанс, когда браузер запретил автоматическое копирование:
+// выделяем текст на экране, чтобы пользователь нажал Ctrl+C сам
+// (так же поступает DataTables в своей кнопке Copy).
+function selectTextFallback(el) {
   try {
-    const btn = $('#myTable').closest('.dataTables_wrapper').find('.buttons-copy');
-    if (!btn.length) return false;
-    btn.trigger('click');
-    return true;
-  } catch (e) {
-    return false;
-  }
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch (e) { /* игнорируем */ }
 }
 
 // Копирует текущий Player List и показывает фидбек на кнопке
@@ -1128,7 +1130,7 @@ function copyPlayerListNow(btn) {
     setTimeout(function () {
       label.textContent = old;
       btn.classList.remove('is-error');
-    }, 2000);
+    }, ok ? 2000 : 3000);
   });
 }
 
@@ -1159,8 +1161,16 @@ function openPopup(title, desc) {
   // копирование списка надёжным путём + закрытие попапа
   copyButton.onclick = function () {
     copyTextToClipboard(lastPlayerList.join('\n'), function (ok) {
-      copyButtonText.innerText = ok ? 'Copied!' : 'Copy failed';
-      setTimeout(closePopup, ok ? 400 : 1500);
+      if (ok) {
+        copyButtonText.innerText = 'Copied!';
+        setTimeout(closePopup, 400);
+      } else {
+        // автоматическое копирование запрещено — выделяем текст,
+        // чтобы можно было нажать Ctrl+C вручную
+        copyButtonText.innerText = 'Press Ctrl+C';
+        selectTextFallback(document.getElementById('playerList'));
+        setTimeout(function () { copyButtonText.innerText = 'Copy Player List'; }, 3000);
+      }
     });
   };
 }
