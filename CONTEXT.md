@@ -14,7 +14,7 @@
 При каждом изменении кода поднимать версию в ТРЁХ местах (Tableau кеширует):
 - `MAIN.trex`: `<url>https://fraud-commits.github.io/opposite-betting-report/?v=N</url>`
 - `index.html`: `css/style.css?v=N` и `js/application.js?v=N`
-Текущая задеплоенная версия: **v=52** (MAIN.trex без версии — грузит всегда свежий index.html).
+Текущая задеплоенная версия: **v=54** (MAIN.trex без версии — грузит всегда свежий index.html).
 
 ## Архитектура js/application.js
 1. **FIELDS** — конфиг полей: `key`, `aliases` (имена колонок клиентов, регистр не важен), `formatted`, `numeric`, `maskable`. Порядок таблицы = порядок колонок в листе клиента.
@@ -22,7 +22,7 @@
 3. **OPPOSITE_PAIRS** — пары противопоставленных ставок (~100 значений): первый элемент → BANKER, второй → PLAYER. `isBanker()/isPlayer()`. Проверено: конфликтов нет.
 4. Группировка брендов: Partner + SubPartner (если есть). Группа хранит PartnerName/SubPartnerName отдельно (для имён файлов).
 5. Маскировка: при клике на чип бренда чужие строки маскируются как `<имя колонки клиента> <Группа>` (напр. `Player Id B`). Маскируются только player/operator/partner-поля (maskable: true). Раунды НЕ маскируются.
-6. **Player List** — UserId + "/" + PartnerId по умолчанию; для клиентов из `PLAYER_GROUP_OVERRIDES` (Mac88: dashboards `mac88`, partners `machub`/`gapmac88`; RG: dashboards `rg` (как целое слово)/`royalgaming`, partners `rggap`/`rgst8`) — по SubPartnerId. Короткие ключи дашборда матчатся по целому слову.
+6. **Player List** — UserId + "/" + PartnerId по умолчанию; для клиентов из `PLAYER_GROUP_OVERRIDES` (Mac88: dashboards `mac88`, partners `machub`/`gapmac88`; RG: dashboards `rg` (как целое слово)/`royalgaming`, partners `rggap`/`rgst8`) — по SubPartnerId. Короткие ключи дашборда матчатся по целому слову. Кнопка **Copy Players** копирует список в буфер за один клик без попапа (`copyPlayerListNow()`, clipboard + fallback execCommand, фидбек "Copied N!"); пункт меню "..." **View Player List** открывает попап со списком (крестик/подложка/Escape закрывают).
 7. **EXPORT TO EXCEL** — `exportCurrentViewExcel()`: экспортирует то, что сейчас на экране (включая маскировку), тем же генератором `buildWorkbookZip()` и с тем же форматом имени: `Example_<Partner_SubPartner или All>_<DateTime>.xlsx` (без `_LFS_`).
 8. **EXPORT ALL EXAMPLES** — `exportExamplesPerPartner()`: один ZIP (`Examples_per_Partner_<ts>.zip`, без `_LFS_`), внутри отдельный .xlsx на партнёра, формат имени `Example_Partner_SubPartner_DateTime.xlsx`. Генератор свой: `buildWorkbookZip()` (JSZip, inlineStr). FULL example = `buildExampleRows(lastRowData)` по ВСЕМ данным, в каждом файле все строки example-раундов, чужие партнёры замаскированы. Excel-стили: шапка #EFFFFB + чёрный жирный, рамки thin, всё по центру, отрицательные красным, автоширина колонок.
 
