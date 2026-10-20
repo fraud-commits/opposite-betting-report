@@ -517,17 +517,14 @@ table.dataTable.floatThead-table { margin-top: 0 !important; }
   background: #FEF2F2;
 }
 
-/* player list table in popup */.player-list {
+/* player list table in popup */
+.player-list {
   max-height: 340px;
   overflow-y: auto;
   border: 1px solid #E3EDE9;
   border-radius: 10px;
 }
+/* шапка в списке игроков не нужна — одна колонка без заголовка */
+.player-list thead { display: none; }
 .player-list .table-striped tbody tr:nth-of-type(odd) { background: #F7FAF8; }
-.player-list td, .player-list th { text-align: center; padding: 8px; }
-.player-list th {
-  position: sticky;
-  top: 0;
-  background: #EFFFFB;
-  z-index: 1;
-}
+.player-list td { text-align: center; padding: 8px; }

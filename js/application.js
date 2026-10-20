@@ -1156,10 +1156,11 @@ function openPopup(title, desc) {
   popupOverlay.classList.remove('hidden');
   popupContent.classList.remove('hidden');
 
-  // копирование списка + фидбек, попап остаётся открытым (видно, что скопировано)
+  // копирование списка надёжным путём + закрытие попапа
   copyButton.onclick = function () {
-    $(".buttons-copy").trigger("click");
-    copyButtonText.innerText = 'Copied!';
-    setTimeout(function () { copyButtonText.innerText = 'Copy Player List'; }, 2000);
+    copyTextToClipboard(lastPlayerList.join('\n'), function (ok) {
+      copyButtonText.innerText = ok ? 'Copied!' : 'Copy failed';
+      setTimeout(closePopup, ok ? 400 : 1500);
+    });
   };
 }
