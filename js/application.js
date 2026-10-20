@@ -1018,6 +1018,24 @@ $(document).on("click", function () {
   $("#lfs-menu").addClass("hidden");
 });
 
+// пункт меню "View Player List" — посмотреть список перед копированием
+$("#view-players-btn").on("click", function () {
+  $("#lfs-menu").addClass("hidden");
+  if (!lastRowData.length) {
+    alert('No data loaded yet. Press Load first.');
+    return;
+  }
+  // список уже построен в попапе (GetPlayerList), просто открываем
+  openPopup('Player List', 'Please find below the formatted list of players who participated in the opposite gaming session');
+});
+
+// закрытие попапа: крестик, клик по подложке, Escape
+$("#popupClose").on("click", closePopup);
+$("#popupOverlay").on("click", closePopup);
+$(document).on("keydown", function (e) {
+  if (e.key === "Escape") closePopup();
+});
+
 
 // Клик по пилюлю "without opposite": показать только такие раунды / вернуть всё
 $("#lfs-noopp").on("click", function () {
@@ -1044,6 +1062,13 @@ $("#export-all-btn").on("click", function () {
 
 
 
+function closePopup() {
+  document.getElementById('popupOverlay').classList.add('hidden');
+  document.getElementById('popupContent').classList.add('hidden');
+  const txt = document.getElementById('copyButtonText');
+  if (txt) txt.innerText = 'Copy Player List';
+}
+
 function openPopup(title, desc) {
   // Get the elements for the popup
   const popupOverlay = document.getElementById('popupOverlay');
@@ -1051,17 +1076,19 @@ function openPopup(title, desc) {
   const popupTitle = document.getElementById('popupTitle');
   const popupDesc = document.getElementById('popupDesc');
   const copyButton = document.getElementById('copyButton');
+  const copyButtonText = document.getElementById('copyButtonText');
 
   // Set the content and show the popup
   popupTitle.innerText = title;
   popupDesc.innerText = desc;
+  copyButtonText.innerText = 'Copy Player List';
   popupOverlay.classList.remove('hidden');
   popupContent.classList.remove('hidden');
 
-  // Add event listener to close the popup when copy button is pressed
-  copyButton.addEventListener('click', function () {
+  // копирование списка + фидбек, попап остаётся открытым (видно, что скопировано)
+  copyButton.onclick = function () {
     $(".buttons-copy").trigger("click");
-    popupOverlay.classList.add('hidden');
-    popupContent.classList.add('hidden');
-  });
+    copyButtonText.innerText = 'Copied!';
+    setTimeout(function () { copyButtonText.innerText = 'Copy Player List'; }, 2000);
+  };
 }
