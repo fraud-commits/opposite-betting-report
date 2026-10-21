@@ -517,6 +517,45 @@ table.dataTable.floatThead-table { margin-top: 0 !important; }
   background: #FEF2F2;
 }
 
+/* ---------- empty state ---------- */
+.lfs-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--lfs-text-muted);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 14, 11, .06);
+}
+
+.lfs-empty-icon {
+  width: 48px;
+  height: 48px;
+  color: #9caf9c;
+  margin-bottom: 16px;
+}
+
+.lfs-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lfs-dark);
+  margin: 0 0 8px;
+}
+
+.lfs-empty-desc {
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+.lfs-empty-desc strong {
+  color: var(--lfs-dark);
+  font-weight: 700;
+}
+
 /* player list in popup — обычный текст (один узел), не таблица/список
    элементов: так большие списки рендерятся мгновенно */
 .player-list {

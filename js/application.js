@@ -323,6 +323,22 @@ function renderTableRows(dataRows, plan) {
   const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
   tbody.innerHTML = '';
 
+  // пустое состояние: нет данных после LOAD или после фильтрации
+  const tableEl = document.getElementById("my-table");
+  const emptyEl = document.getElementById("lfs-empty-state");
+  const nooppEl = document.getElementById("lfs-noopp");
+
+  if (!dataRows || dataRows.length === 0) {
+    if (tableEl) tableEl.style.display = 'none';
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    if (recEl) recEl.textContent = '0 records · 0 rounds · 0 without opposite';
+    if (nooppEl) nooppEl.style.display = 'none';
+    return;
+  }
+
+  if (tableEl) tableEl.style.display = '';
+  if (emptyEl) emptyEl.classList.add('hidden');
+
   // раунды с opposite — остальные строки подсветим как без пары
   let exampleIds = new Set();
   try { exampleIds = new Set(buildExampleRows(dataRows).map(r => r.Gameid)); } catch (e) {}
@@ -378,7 +394,6 @@ function renderTableRows(dataRows, plan) {
   new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exampleIds.has(g)) withoutOpposite++; });
   const recEl = document.getElementById('lfs-records');
   if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
-  const nooppEl = document.getElementById('lfs-noopp');
   if (nooppEl) {
     if (withoutOpposite > 0) {
       nooppEl.style.display = '';
@@ -753,6 +768,14 @@ function hideGlobalLoader() {
 
 
 tableau.extensions.initializeAsync().then(function () {
+
+  // пустое состояние до первого нажатия LOAD
+  const emptyEl = document.getElementById('lfs-empty-state');
+  const tableEl = document.getElementById('my-table');
+  const recEl = document.getElementById('lfs-records');
+  if (tableEl) tableEl.style.display = 'none';
+  if (emptyEl) emptyEl.classList.remove('hidden');
+  if (recEl) recEl.textContent = '0 records · 0 rounds · 0 without opposite';
 
   function getWorksheet() {
     const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
