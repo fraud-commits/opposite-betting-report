@@ -244,6 +244,16 @@ function renderLoadedTotals(showOther) {
   $("#lfs-stat-other").toggle(Boolean(showOther) && lastTotals.other > 0);
 }
 
+function updateGroupSelectionHint() {
+  const selectionRequired = lastGroups.length > 1 && !currentBrandId;
+  $("#lfs-group-hint").toggleClass("hidden", !selectionRequired);
+  if (selectionRequired) {
+    $("#export-btn").attr("aria-describedby", "lfs-group-hint");
+  } else {
+    $("#export-btn").removeAttr("aria-describedby");
+  }
+}
+
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const normPos = pos => String(pos).trim().toLowerCase();
@@ -949,6 +959,7 @@ tableau.extensions.initializeAsync().then(function () {
       lastRowData = rowData;
       lastGroups = Uniqueidentifier;
       lastPlan = plan;
+      updateGroupSelectionHint();
 
       // начальная отрисовка всей таблицы
       renderTableRows(lastRowData, lastPlan);
@@ -991,6 +1002,7 @@ tableau.extensions.initializeAsync().then(function () {
         currentBrand = clickedGroup
           ? clickedGroup.PartnerName + (clickedGroup.SubPartnerName ? '_' + clickedGroup.SubPartnerName : '')
           : clickedUniqueId;
+        updateGroupSelectionHint();
 
         // подсветить выбранный чип
         $('button[data-Uniqueidentifier]').removeClass('active');
@@ -1022,6 +1034,7 @@ tableau.extensions.initializeAsync().then(function () {
     exampleOnly = false;
     $("#example-btn").removeClass('active');
     $("#lfs-noopp").removeClass('active');
+    $("#lfs-group-hint").addClass('hidden');
     $(".butoon-container").empty();
     LoadGameExample();
   });
@@ -1068,6 +1081,12 @@ $("#example-btn").on("click", function () {
 $("#export-btn").on("click", async function () {
   const $label = $("#exportLabel");
   const oldLabel = $label.text();
+  if (lastGroups.length > 1 && !currentBrandId) {
+    updateGroupSelectionHint();
+    $label.text("Select a group first");
+    setTimeout(function () { $label.text(oldLabel); }, 2500);
+    return;
+  }
   $label.text("Downloading…");
   try {
     const fileName = await exportCurrentViewExcel();
