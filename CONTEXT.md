@@ -14,7 +14,7 @@
 При каждом изменении кода поднимать версию в ТРЁХ местах (Tableau кеширует):
 - `MAIN.trex`: `<url>https://fraud-commits.github.io/opposite-betting-report/?v=N</url>`
 - `index.html`: `css/style.css?v=N` и `js/application.js?v=N`
-Текущая задеплоенная версия: **v=58** (MAIN.trex без версии — грузит всегда свежий index.html).
+Текущая задеплоенная версия: **v=59** (MAIN.trex без версии — грузит всегда свежий index.html).
 
 ## Архитектура js/application.js
 1. **FIELDS** — конфиг полей: `key`, `aliases` (имена колонок клиентов, регистр не важен), `formatted`, `numeric`, `maskable`. Порядок таблицы = порядок колонок в листе клиента.
@@ -34,7 +34,7 @@
 - `index.html`: тёмная шапка (gradient #043927→#000E0B), иконка двойной стрелки (неоновая влево + белая вправо, `.lfs-back`), Load (зелёная), Export Excel (ghost), меню "..." с Export All Examples (ZIP); суб-бар со статистикой + Example/Players; чипы брендов; футер records/rounds + дата.
 - Loading state: спиннера НЕТ (убран по просьбе). До первого LOAD `body.is-loading` блюрит контент под шапкой (subbar, чипы, таблица, футер), шапка с кнопкой Load остаётся чёткой. show/hideGlobalLoader тогглят класс body.
 - `application.js`: чипы `.lfs-chip`; `renderTableRows()` — бейджи Bet Position, деньги 0.00, NET со знаком и цветом; футер records/rounds; меню "..." toggle; дата в футере. EXAMPLE рендерится тем же новым view (`renderTableRows`).
-- Excel: обе кнопки используют `buildWorkbookZip()` и один формат имён без `_LFS_`.
+- Excel: обе кнопки используют `buildWorkbookZip()` и один формат имён без `_LFS_`; деньги в формате `#,##0.00` (разделитель тысяч), отрицательные красным.
 
 ## Оставшиеся действия
 1. Запушить после подтверждения пользователя (push → Pages → проверить build status).
