@@ -312,7 +312,7 @@ function buildHeader(plan) {
 
 
 // Отрисовать строки в таблице по плану колонок
-async function renderTableRows(dataRows, plan) {
+function renderTableRows(dataRows, plan) {
   if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
     $('#my-table').DataTable().clear().destroy();
   }
@@ -321,21 +321,14 @@ async function renderTableRows(dataRows, plan) {
   lastDisplayedPlan = plan || lastDisplayedPlan;
 
   const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
+  tbody.innerHTML = '';
+
+  // пустое состояние: нет данных после LOAD или после фильтрации
   const tableEl = document.getElementById("my-table");
   const emptyEl = document.getElementById("lfs-empty-state");
   const recEl = document.getElementById('lfs-records');
   const nooppEl = document.getElementById('lfs-noopp');
 
-  // анимация исчезновения старых строк
-  const existingRows = Array.from(tbody.rows);
-  existingRows.forEach(row => row.classList.add('fade-out'));
-  if (existingRows.length > 0) {
-    await new Promise(resolve => setTimeout(resolve, 180));
-  }
-
-  tbody.innerHTML = '';
-
-  // пустое состояние: нет данных после LOAD или после фильтрации
   if (!dataRows || dataRows.length === 0) {
     if (tableEl) tableEl.style.display = 'none';
     if (emptyEl) emptyEl.classList.remove('hidden');
@@ -354,8 +347,6 @@ async function renderTableRows(dataRows, plan) {
   for (let i = 0; i < dataRows.length; i++) {
     const row = tbody.insertRow();
     if (!exampleIds.has(dataRows[i].Gameid)) row.classList.add('row-noopp');
-    // анимация появления новой строки
-    row.classList.add('fade-in');
 
     plan.forEach((f, cellIndex) => {
       const cell = row.insertCell(cellIndex);
@@ -395,11 +386,6 @@ async function renderTableRows(dataRows, plan) {
         cell.setAttribute("data-maskvalue", value);
         cell.setAttribute("data-masklabel", f.maskLabel);
       }
-    });
-
-    // запускаем анимацию появления следующим кадром
-    requestAnimationFrame(() => {
-      row.classList.add('appear');
     });
   }
 

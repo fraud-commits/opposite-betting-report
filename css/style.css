@@ -580,20 +580,3 @@ table.dataTable.floatThead-table { margin-top: 0 !important; }
   color: var(--lfs-dark);
   font-family: inherit;
 }
-
-/* ---------- smooth table row transitions ---------- */
-#my-table tbody tr {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-#my-table tbody tr.fade-out {
-  opacity: 0;
-  transform: translateY(-3px);
-}
-#my-table tbody tr.fade-in {
-  opacity: 0;
-  transform: translateY(3px);
-}
-#my-table tbody tr.fade-in.appear {
-  opacity: 1;
-  transform: translateY(0);
-}
