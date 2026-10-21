@@ -496,11 +496,16 @@ body {
 /* loading state: blur content below topbar, Load button stays sharp */
 body.is-loading .lfs-subbar,
 body.is-loading .butoon-container,
-body.is-loading .lfs-table-card,
+body.is-loading #my-table,
 body.is-loading .lfs-footer {
   filter: blur(6px);
   pointer-events: none;
   user-select: none;
+}
+
+body.is-loading .lfs-empty-state {
+  filter: none !important;
+  pointer-events: auto;
 }
 
 /* ---------- misc ---------- */
