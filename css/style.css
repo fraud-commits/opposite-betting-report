@@ -251,8 +251,8 @@ body {
 .lfs-btn-outline.active {
   border-color: var(--lfs-green);
   color: var(--lfs-green);
-  background: #EFFFFB;
-  box-shadow: 0 2px 8px rgba(0, 14, 11, .1);
+  background: #ECFDF5;
+  box-shadow: none;
 }
 
 .lfs-btn-outline svg { width: 16px; height: 16px; }
