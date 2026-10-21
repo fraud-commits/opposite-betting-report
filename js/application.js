@@ -873,11 +873,18 @@ tableau.extensions.initializeAsync().then(function () {
         } else if (isPlayer(betPos)) {
           Player += amount;
         } else {
-          const tSide = tripleSide(betPos);
-          if (tSide === 0) Banker += amount;
-          else if (tSide === 1) Player += amount;
-          else if (tSide === 2) Triple += amount;
-          else Other += amount;
+          // ноль (0) не считается ни в парах, ни в тройках, ни в Other —
+          // в рулетке он часто участвует в opposite как отдельное поле
+          const normPos = String(betPos).trim().toLowerCase();
+          if (normPos === 'straight_up_0') {
+            // игнорируем
+          } else {
+            const tSide = tripleSide(betPos);
+            if (tSide === 0) Banker += amount;
+            else if (tSide === 1) Player += amount;
+            else if (tSide === 2) Triple += amount;
+            else Other += amount;
+          }
         }
 
         // строка данных: все колонки плана + служебные поля
