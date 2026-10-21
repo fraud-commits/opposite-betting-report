@@ -822,6 +822,7 @@ tableau.extensions.initializeAsync().then(function () {
       let Banker = 0;
       let Player = 0;
       let Triple = 0;
+      let Other = 0;
 
       if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
         $('#my-table').DataTable().clear().destroy();
@@ -876,6 +877,7 @@ tableau.extensions.initializeAsync().then(function () {
           if (tSide === 0) Banker += amount;
           else if (tSide === 1) Player += amount;
           else if (tSide === 2) Triple += amount;
+          else Other += amount;
         }
 
         // строка данных: все колонки плана + служебные поля
@@ -964,7 +966,9 @@ tableau.extensions.initializeAsync().then(function () {
       $(".triple").html(tripleFormatted.replace(/[$]/g, ''));
       $("#lfs-stat-triple").toggle(Triple > 0);
 
-
+      let otherFormatted = Other.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+      $(".other").html(otherFormatted.replace(/[$]/g, ''));
+      $("#lfs-stat-other").toggle(Other > 0);
 
       // Маскировка чужих брендов при клике на кнопку бренда
       $('button[data-Uniqueidentifier]').off("click").on("click", function () {
