@@ -216,8 +216,6 @@ let currentBrandId = null;
 let nooppOnly = false;
 // фильтр "только примеры opposite" (переключается кликом на кнопку Example)
 let exampleOnly = false;
-// фильтр "только ставки без opposite" (переключается кликом на кнопку Other)
-let otherOnly = false;
 
 // Данные последней загрузки — нужны кнопкам EXPORT EXCEL / EXPORT ALL EXAMPLES
 let lastRowData = [];
@@ -824,7 +822,6 @@ tableau.extensions.initializeAsync().then(function () {
       let Banker = 0;
       let Player = 0;
       let Triple = 0;
-      let Other = 0;
 
       if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
         $('#my-table').DataTable().clear().destroy();
@@ -879,7 +876,6 @@ tableau.extensions.initializeAsync().then(function () {
           if (tSide === 0) Banker += amount;
           else if (tSide === 1) Player += amount;
           else if (tSide === 2) Triple += amount;
-          else Other += amount;
         }
 
         // строка данных: все колонки плана + служебные поля
@@ -968,9 +964,6 @@ tableau.extensions.initializeAsync().then(function () {
       $(".triple").html(tripleFormatted.replace(/[$]/g, ''));
       $("#lfs-stat-triple").toggle(Triple > 0);
 
-      let otherFormatted = Other.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      $(".other").html(otherFormatted.replace(/[$]/g, ''));
-      $("#lfs-stat-other").toggle(Other > 0);
 
 
       // Маскировка чужих брендов при клике на кнопку бренда
@@ -1010,9 +1003,7 @@ tableau.extensions.initializeAsync().then(function () {
     currentBrandId = null;
     nooppOnly = false;
     exampleOnly = false;
-    otherOnly = false;
     $("#example-btn").removeClass('active');
-    $("#other-btn").removeClass('active');
     $("#lfs-noopp").removeClass('active');
     $(".butoon-container").empty();
     LoadGameExample();
@@ -1039,9 +1030,7 @@ function PlayerExampleGenerator() {
 // Показать только примеры opposite / вернуть все данные
 $("#example-btn").on("click", function () {
   nooppOnly = false;
-  otherOnly = false;
   $("#lfs-noopp").removeClass('active');
-  $("#other-btn").removeClass('active');
   exampleOnly = !exampleOnly;
   $(this).toggleClass('active', exampleOnly);
   if (exampleOnly) {
@@ -1059,52 +1048,6 @@ $("#example-btn").on("click", function () {
     $(".player-list-count").html(lastPlayerList.length);
     renderTableRows(lastRowData, lastPlan);
     // Восстанавливаем статистику
-    $(".lfs-stat-value.banker").html(bankerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.player").html(playerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.triple").html(tripleFormatted.replace(/[$]/g, ''));
-    $("#lfs-stat-triple").toggle(Triple > 0);
-    $("#lfs-stat-other").hide();
-  }
-  const card = document.querySelector('.lfs-table-card');
-  if (card) card.scrollTop = 0;
-});
-
-// Показать только ставки без opposite / вернуть все данные
-function PlayerOtherGenerator() {
-  $(".UserData").empty();
-  // Получить все Gameid, у которых есть opposite
-  const exampleIds = new Set(buildExampleRows(lastRowData).map(r => r.gameId));
-  // Оставить только строки без opposite
-  const otherRows = lastRowData.filter(r => !exampleIds.has(r.Gameid));
-  // Пересчитаем список игроков только для other-раундов
-  const groupField = getPlayerGroupField(otherRows);
-  lastPlayerList = [...new Set(otherRows.map(item => uniquePlayerKey(item, groupField)))];
-  $(".player-list-count").html(lastPlayerList.length);
-  GenerateHtmalTable(otherRows);
-}
-
-$("#other-btn").on("click", function () {
-  nooppOnly = false;
-  exampleOnly = false;
-  $("#lfs-noopp").removeClass('active');
-  $("#example-btn").removeClass('active');
-  otherOnly = !otherOnly;
-  $(this).toggleClass('active', otherOnly);
-  if (otherOnly) {
-    PlayerOtherGenerator();
-    // Показываем сумму Other, скрываем First/Second/Third
-    $(".lfs-stat-value.banker").html("0");
-    $(".lfs-stat-value.player").html("0");
-    $(".lfs-stat-value.triple").html("0");
-    $("#lfs-stat-triple").hide();
-    $("#lfs-stat-other").show();
-    $(".lfs-stat-value.other").html(otherFormatted);
-  } else {
-    const groupField = getPlayerGroupField(lastRowData);
-    lastPlayerList = [...new Set(lastRowData.map(item => uniquePlayerKey(item, groupField)))];
-    $(".player-list-count").html(lastPlayerList.length);
-    renderTableRows(lastRowData, lastPlan);
-    // Восстанавливаем реальную статистику
     $(".lfs-stat-value.banker").html(bankerFormatted.replace(/[$]/g, ''));
     $(".lfs-stat-value.player").html(playerFormatted.replace(/[$]/g, ''));
     $(".lfs-stat-value.triple").html(tripleFormatted.replace(/[$]/g, ''));
