@@ -738,7 +738,9 @@ async function exportCurrentViewExcel() {
   });
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const brandPart = currentBrandId ? currentBrand : 'All';
-  downloadBlob(blob, 'Example_' + sanitizeFilePart(brandPart) + '_' + getTimestamp() + '.xlsx');
+  const fileName = 'Example_' + sanitizeFilePart(brandPart) + '_' + getTimestamp() + '.xlsx';
+  downloadBlob(blob, fileName);
+  return fileName;
 }
 
 function showGlobalLoader() {
@@ -996,8 +998,18 @@ tableau.extensions.initializeAsync().then(function () {
 });
 
 
-$("#export-btn").on("click", function () {
-  exportCurrentViewExcel();
+$("#export-btn").on("click", async function () {
+  const $label = $("#exportLabel");
+  const oldLabel = $label.text();
+  $label.text("Downloading…");
+  try {
+    const fileName = await exportCurrentViewExcel();
+    $label.text("Downloaded: " + fileName);
+    setTimeout(function () { $label.text(oldLabel); }, 2500);
+  } catch (e) {
+    $label.text(oldLabel);
+    console.error(e);
+  }
 });
 
 
