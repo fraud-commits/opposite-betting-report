@@ -214,6 +214,8 @@ let currentBrand = "No Brand name selected";
 let currentBrandId = null;
 // фильтр "только раунды без opposite" (переключается кликом по пилюлю)
 let nooppOnly = false;
+// фильтр "только примеры opposite" (переключается кликом на кнопку Example)
+let exampleOnly = false;
 
 // Данные последней загрузки — нужны кнопкам EXPORT EXCEL / EXPORT ALL EXAMPLES
 let lastRowData = [];
@@ -975,7 +977,15 @@ tableau.extensions.initializeAsync().then(function () {
       $("#example-btn").off("click").on("click", function () {
         nooppOnly = false;
         $("#lfs-noopp").removeClass('active');
-        PlayerExampleGenerator();
+        exampleOnly = !exampleOnly;
+        $(this).toggleClass('active', exampleOnly);
+        if (exampleOnly) {
+          PlayerExampleGenerator();
+        } else {
+          renderTableRows(lastRowData, lastPlan);
+        }
+        const card = document.querySelector('.lfs-table-card');
+        if (card) card.scrollTop = 0;
       });
 
       // Маскировка чужих брендов при клике на кнопку бренда
@@ -1014,6 +1024,8 @@ tableau.extensions.initializeAsync().then(function () {
     currentBrand = "No Brand name selected";
     currentBrandId = null;
     nooppOnly = false;
+    exampleOnly = false;
+    $("#example-btn").removeClass('active');
     $("#lfs-noopp").removeClass('active');
     $(".butoon-container").empty();
     LoadGameExample();
