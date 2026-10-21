@@ -1019,6 +1019,10 @@ function GenerateHtmalTable(matchingRows) {
 function PlayerExampleGenerator() {
   $(".UserData").empty();
   const matchingRows = buildExampleRows(lastRowData);
+  // Пересчитаем список игроков только для example-раундов
+  const groupField = getPlayerGroupField(matchingRows);
+  lastPlayerList = [...new Set(matchingRows.map(item => uniquePlayerKey(item, groupField)))];
+  $(".player-list-count").html(lastPlayerList.length);
   GenerateHtmalTable(matchingRows);
 }
 
@@ -1031,6 +1035,10 @@ $("#example-btn").on("click", function () {
   if (exampleOnly) {
     PlayerExampleGenerator();
   } else {
+    // Вернуть полный список игроков по всем загруженным данным
+    const groupField = getPlayerGroupField(lastRowData);
+    lastPlayerList = [...new Set(lastRowData.map(item => uniquePlayerKey(item, groupField)))];
+    $(".player-list-count").html(lastPlayerList.length);
     renderTableRows(lastRowData, lastPlan);
   }
   const card = document.querySelector('.lfs-table-card');
