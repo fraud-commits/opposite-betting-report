@@ -179,6 +179,10 @@ const OPPOSITE_TRIPLES = [
   ['1st dozen', '2nd dozen', '3rd dozen'],
 ];
 
+// Player уже занят как вторая сторона Banker/Player, поэтому Dealer/Player
+// хранится отдельно, но при выборе Example проверяется как обычная точная пара.
+const EXAMPLE_PAIRS = OPPOSITE_PAIRS.concat([['dealer', 'player']]);
+
 // Player list по умолчанию группируется по Partner Id.
 // Исключения — по SubPartner, если совпало что-то из условий:
 const PLAYER_GROUP_OVERRIDES = {
@@ -257,6 +261,9 @@ function updateGroupSelectionHint() {
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const normPos = pos => String(pos).trim().toLowerCase();
+// Кэш результатов для одного и того же массива строк:
+// LOAD/EXAMPLE/without-opposite не должны пересчитывать выборку заново.
+const exampleRowsCache = new WeakMap();
 
 // Максимальный дисбаланс сторон парного раунда в процентах:
 // (First − Second) / Second × 100 должен быть в пределах ±OPPOSITE_BALANCE_PCT
@@ -373,14 +380,22 @@ function renderTableRows(dataRows, plan) {
   let exampleIds = new Set();
   try { exampleIds = new Set(buildExampleRows(dataRows).map(r => r.Gameid)); } catch (e) {}
 
-  for (let i = 0; i < dataRows.length; i++) {
-    const row = tbody.insertRow();
-    if (!exampleIds.has(dataRows[i].Gameid)) row.classList.add('row-noopp');
+  const roundIds = new Set();
+  const fragments = [];
 
-    plan.forEach((f, cellIndex) => {
-      const cell = row.insertCell(cellIndex);
-      const value = dataRows[i][f.key];
-      let html = value;
+  // Одна строка HTML на весь tbody: insertRow/insertCell поштучно дают
+  // тысячи layout-invalidations и заметно тормозят на больших выгрузках.
+  for (let i = 0; i < dataRows.length; i++) {
+    const dataRow = dataRows[i];
+    roundIds.add(dataRow.Gameid);
+    fragments.push(exampleIds.has(dataRow.Gameid) ? '<tr>' : '<tr class="row-noopp">');
+
+    for (let c = 0; c < plan.length; c++) {
+      const f = plan[c];
+      const value = dataRow[f.key];
+      let html = value === null || value === undefined ? '' : String(value);
+      let cellClass = '';
+      let attributes = '';
 
       // Bet Position -> цветной бейдж
       if (f.key === 'BetPosition') {
@@ -391,13 +406,13 @@ function renderTableRows(dataRows, plan) {
           const tSide = tripleSide(value);
           if (tSide !== -1) side = 'badge-triple-' + (tSide + 1);
         }
-        html = '<span class="pos-badge ' + side + '">' + value + '</span>';
+        html = '<span class="pos-badge ' + side + '">' + html + '</span>';
       }
       // деньги -> формат 0.00, NET со знаком и цветом
       else if (MONEY_KEYS.includes(f.key)) {
         const num = Number(String(value).replace(/,/g, ''));
         if (value !== '' && !isNaN(num)) {
-          cell.classList.add('num');
+          cellClass = ' class="num"';
           const abs = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
           if (f.key === 'Net' || f.key === 'NetEUR') {
             html = '<span class="' + (num < 0 ? 'num-neg' : 'num-pos') + '">' + (num < 0 ? '-' : '+') + abs + '</span>';
@@ -407,21 +422,25 @@ function renderTableRows(dataRows, plan) {
         }
       }
 
-      cell.innerHTML = html;
-
       if (f.maskable) {
-        cell.setAttribute("data-UniqueGroup", dataRows[i].UniqueGroup);
-        cell.setAttribute("data-Uniqueidentifier", dataRows[i].Uniqueidentifier);
-        cell.setAttribute("data-maskvalue", value);
-        cell.setAttribute("data-masklabel", f.maskLabel);
+        attributes = ' data-UniqueGroup="' + String(dataRow.UniqueGroup).replace(/"/g, '&quot;') + '"' +
+          ' data-Uniqueidentifier="' + String(dataRow.Uniqueidentifier).replace(/"/g, '&quot;') + '"' +
+          ' data-maskvalue="' + String(value).replace(/"/g, '&quot;') + '"' +
+          ' data-masklabel="' + String(f.maskLabel).replace(/"/g, '&quot;') + '"';
       }
-    });
+
+      fragments.push('<td' + cellClass + attributes + '>' + html + '</td>');
+    }
+
+    fragments.push('</tr>');
   }
 
+  tbody.innerHTML = fragments.join('');
+
   // футер: "N records · M rounds · K without opposite"
-  const rounds = new Set(dataRows.map(r => r.Gameid)).size;
+  const rounds = roundIds.size;
   let withoutOpposite = 0;
-  new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exampleIds.has(g)) withoutOpposite++; });
+  roundIds.forEach(g => { if (!exampleIds.has(g)) withoutOpposite++; });
   if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
   if (nooppEl) {
     if (withoutOpposite > 0) {
@@ -435,99 +454,119 @@ function renderTableRows(dataRows, plan) {
 
 // Выборка example-раундов из переданных строк (логика кнопки EXAMPLE)
 function buildExampleRows(rows) {
-  const uniqueGameIds = [...new Set(rows.map(item => item.Gameid))];
+  const cached = exampleRowsCache.get(rows);
+  if (cached) return cached;
+
+  // Одним проходом группируем строки по раундам, чтобы не делать rows.forEach
+  // внутри каждого раунда (при 5–20k строк это O(n) вместо O(n × rounds)).
+  const gamesById = new Map();
+  rows.forEach(item => {
+    let gameData = gamesById.get(item.Gameid);
+    if (!gameData) {
+      gameData = { gameId: item.Gameid, positionTotals: {}, players: [] };
+      gamesById.set(item.Gameid, gameData);
+    }
+    const betPosition = item.BetPosition;
+    const normalizedPosition = normPos(betPosition);
+    gameData.positionTotals[normalizedPosition] = (gameData.positionTotals[normalizedPosition] || 0) + item.AmountNum;
+    gameData.players.push(item.UserId);
+  });
+
   const resultArray = [];
+  gamesById.forEach((gameData, gameId) => {
+    const positionTotals = gameData.positionTotals;
 
-  uniqueGameIds.forEach(gameId => {
-    const gameData = { gameId: gameId };
-    const playersInGame = [];
-
-    rows.forEach(item => {
-      if (item.Gameid === gameId) {
-        const betPosition = item.BetPosition;
-        if (isBanker(betPosition)) {
-          gameData.BANKER = (gameData.BANKER || 0) + item.AmountNum;
-        } else if (isPlayer(betPosition)) {
-          gameData.PLAYER = (gameData.PLAYER || 0) + item.AmountNum;
-        } else {
-          gameData[betPosition] = (gameData[betPosition] || 0) + item.AmountNum;
-        }
-        playersInGame.push(item.UserId);
-      }
-    });
-
-    // тройные противоположности: закрыты все 3 стороны?
-    OPPOSITE_TRIPLES.forEach(triple => {
-      const vols = triple.map(t => {
-        const key = Object.keys(gameData).find(k => normPos(k) === t);
-        return key ? Number(gameData[key]) || 0 : 0;
-      });
+    // Тройки ищем по словарю сторон, а не перебирая все пары конфига:
+    // OPPOSITE_TRIPLES.forEach для каждого раунда давал заметную задержку.
+    for (const side in positionTotals) {
+      const tSide = tripleSide(side);
+      if (tSide === -1) continue;
+      const triple = OPPOSITE_TRIPLES.find(t => t.includes(side));
+      if (!triple) continue;
+      const vols = triple.map(t => Number(positionTotals[t]) || 0);
       if (vols.every(v => v > 0)) {
         gameData.TRIPLE = (gameData.TRIPLE || 0) + vols.reduce((a, b) => a + b, 0);
+        break;
       }
-    });
+    }
 
-    gameData.players = [...new Set(playersInGame)];
-    gameData.difference = (gameData.BANKER || 0) - (gameData.PLAYER || 0);
-    gameData.differencePercentage = ((gameData.BANKER || 0) - (gameData.PLAYER || 0)) / (gameData.PLAYER || 1) * 100;
+    // Для пар недостаточно просто иметь любую First side и любую Second side:
+    // RED + HIGH не являются opposite. Выбираем только точную пару из конфига,
+    // но перебираем стороны раунда, а не весь список пар — иначе O(n × pairs).
+    const sides = Object.keys(positionTotals);
+    for (let i = 0; i < sides.length; i++) {
+      const left = sides[i];
+      const first = Number(positionTotals[left]) || 0;
+      if (first <= 0) continue;
+      for (let j = 0; j < EXAMPLE_PAIRS.length; j++) {
+        const pair = EXAMPLE_PAIRS[j];
+        // Стороны пары фиксированы: pair[0] -> First side, pair[1] -> Second side.
+        // Проверять ту же пару в обратном порядке нельзя — 11% дисбаланса
+        // в одну сторону превратились бы в −9.9% в другую.
+        if (pair[0] !== left) continue;
+        const right = pair[1];
+        const second = Number(positionTotals[right]) || 0;
+        if (second <= 0) continue;
+
+        const differencePercentage = (first - second) / second * 100;
+        if (differencePercentage < -OPPOSITE_BALANCE_PCT || differencePercentage > OPPOSITE_BALANCE_PCT) continue;
+
+        const volume = first + second;
+        if (!gameData.MATCHED_PAIR || volume > gameData.MATCHED_PAIR.volume) {
+          gameData.MATCHED_PAIR = { first, second, volume, differencePercentage };
+        }
+      }
+    }
+
+    gameData.players = [...new Set(gameData.players)];
     resultArray.push(gameData);
   });
 
   const filteredArray = [];
+  // Лучшие текущие значения считаем один раз на проход, без filteredArray.filter()
+  // внутри каждого раунда — это было O(n²) на большом количестве раундов.
+  let topBanker = -Infinity;
+  let topPlayer = -Infinity;
+  let topTriple = -Infinity;
 
   resultArray.forEach(gameData => {
-    const uniquePlayers = [...new Set(gameData.players)];
+    const uniquePlayers = gameData.players;
 
     if (uniquePlayers.length > 0) {
       let exampleCount = uniquePlayers.length <= 5 ? 1 : 2;
-      const pairVol = (gameData.BANKER || 0) + (gameData.PLAYER || 0);
+      const matchedPair = gameData.MATCHED_PAIR;
 
       // 1) парные противоположности: баланс ±OPPOSITE_BALANCE_PCT и рост топа
-      if (pairVol > 0 && gameData.differencePercentage <= OPPOSITE_BALANCE_PCT && gameData.differencePercentage >= -OPPOSITE_BALANCE_PCT) {
-        let bankerGames = filteredArray.filter(game => game.UserId === 'BANKER');
-        let playerGames = filteredArray.filter(game => game.UserId === 'PLAYER');
-        let topBankerGame = bankerGames.reduce((max, game) => max.BANKER > game.BANKER ? max : game, { BANKER: -Infinity });
-        let topPlayerGame = playerGames.reduce((max, game) => max.PLAYER > game.PLAYER ? max : game, { PLAYER: -Infinity });
-
-        if ((gameData.BANKER || 0) > topBankerGame.BANKER || (gameData.PLAYER || 0) > topPlayerGame.PLAYER) {
-          const gameIdList = [];
-          for (let i = 0; i < exampleCount; i++) {
-            gameIdList.push(gameData.gameId);
-          }
+      if (matchedPair) {
+        if (matchedPair.first > topBanker || matchedPair.second > topPlayer) {
           filteredArray.push({
-            UserId: gameData.BANKER >= gameData.PLAYER ? 'BANKER' : 'PLAYER',
-            gameIdList,
-            BANKER: gameData.BANKER || 0,
-            PLAYER: gameData.PLAYER || 0,
-            difference: gameData.difference || 0,
-            differencePercentage: gameData.differencePercentage || 0
+            UserId: matchedPair.first >= matchedPair.second ? 'BANKER' : 'PLAYER',
+            gameIdList: Array(exampleCount).fill(gameData.gameId),
+            BANKER: matchedPair.first,
+            PLAYER: matchedPair.second,
+            difference: matchedPair.first - matchedPair.second,
+            differencePercentage: matchedPair.differencePercentage
           });
+          if (matchedPair.first > topBanker) topBanker = matchedPair.first;
+          if (matchedPair.second > topPlayer) topPlayer = matchedPair.second;
         }
       }
 
       // 2) тройные противоположности: все 3 стороны закрыты, отбор по объёму
       if (gameData.TRIPLE) {
-        let tripleTop = filteredArray
-          .filter(game => game.UserId === 'TRIPLE')
-          .reduce((max, game) => game.TRIPLE > max ? game.TRIPLE : max, -Infinity);
-        if (gameData.TRIPLE > tripleTop) {
-          const gameIdList = [];
-          for (let i = 0; i < exampleCount; i++) {
-            gameIdList.push(gameData.gameId);
-          }
+        if (gameData.TRIPLE > topTriple) {
           filteredArray.push({
             UserId: 'TRIPLE',
-            gameIdList,
+            gameIdList: Array(exampleCount).fill(gameData.gameId),
             BANKER: 0,
             PLAYER: 0,
             TRIPLE: gameData.TRIPLE,
             difference: 0,
             differencePercentage: 0
           });
+          topTriple = gameData.TRIPLE;
         }
       }
-    } else {
-      return false;
     }
   });
 
@@ -536,7 +575,13 @@ function buildExampleRows(rows) {
     return Math.max(b.BANKER || 0, b.PLAYER || 0, b.TRIPLE || 0) - Math.max(a.BANKER || 0, a.PLAYER || 0, a.TRIPLE || 0);
   });
 
-  return rows.filter(row => filteredArray.some(filteredRow => filteredRow.gameIdList.includes(row.Gameid)));
+  // Быстрее, чем filteredArray.some(...includes) для каждой строки:
+  // собираем Set выбранных Round Id один раз.
+  const selectedGameIds = new Set();
+  filteredArray.forEach(filteredRow => filteredRow.gameIdList.forEach(gameId => selectedGameIds.add(gameId)));
+  const selectedRows = rows.filter(row => selectedGameIds.has(row.Gameid));
+  exampleRowsCache.set(rows, selectedRows);
+  return selectedRows;
 }
 
 // Построить однолистовой XLSX (JSZip-объект) из строк данных
@@ -929,7 +974,8 @@ tableau.extensions.initializeAsync().then(function () {
         rowData.push(rowObj);
       }
 
-      console.log(rowData);
+      // Полный массив в консоль тормозит DevTools и Tableau embedded browser
+      // даже когда консоль закрыта; в прод-версии его не выводим.
 
 
       function GetPlayerList() {
@@ -1047,16 +1093,6 @@ function GenerateHtmalTable(matchingRows) {
   renderTableRows(matchingRows || lastRowData, lastPlan);
 }
 
-function PlayerExampleGenerator() {
-  $(".UserData").empty();
-  const matchingRows = buildExampleRows(lastRowData);
-  // Пересчитаем список игроков только для example-раундов
-  const groupField = getPlayerGroupField(matchingRows);
-  lastPlayerList = [...new Set(matchingRows.map(item => uniquePlayerKey(item, groupField)))];
-  $(".player-list-count").html(lastPlayerList.length);
-  GenerateHtmalTable(matchingRows);
-}
-
 // Показать только примеры opposite / вернуть все данные
 $("#example-btn").on("click", function () {
   nooppOnly = false;
@@ -1064,7 +1100,14 @@ $("#example-btn").on("click", function () {
   exampleOnly = !exampleOnly;
   $(this).toggleClass('active', exampleOnly);
   if (exampleOnly) {
-    PlayerExampleGenerator();
+    // При первом показе example считаем выборку один раз и сразу кладём её
+    // в кэш: renderTableRows внутри не будет запускать buildExampleRows again.
+    const matchingRows = buildExampleRows(lastRowData);
+    exampleRowsCache.set(matchingRows, matchingRows);
+    const groupField = getPlayerGroupField(matchingRows);
+    lastPlayerList = [...new Set(matchingRows.map(item => uniquePlayerKey(item, groupField)))];
+    $(".player-list-count").html(lastPlayerList.length);
+    renderTableRows(matchingRows, lastPlan);
     renderLoadedTotals(false);
   } else {
     // Вернуть полный список игроков по всем загруженным данным
@@ -1129,7 +1172,9 @@ $("#lfs-noopp").on("click", function () {
   if (nooppOnly) {
     let exIds = new Set();
     try { exIds = new Set(buildExampleRows(lastRowData).map(r => r.Gameid)); } catch (e) {}
-    renderTableRows(lastRowData.filter(r => !exIds.has(r.Gameid)), lastPlan);
+    const withoutOppositeRows = lastRowData.filter(r => !exIds.has(r.Gameid));
+    exampleRowsCache.set(withoutOppositeRows, buildExampleRows(withoutOppositeRows));
+    renderTableRows(withoutOppositeRows, lastPlan);
   } else {
     renderTableRows(lastRowData, lastPlan);
   }
