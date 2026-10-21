@@ -216,6 +216,8 @@ let currentBrandId = null;
 let nooppOnly = false;
 // фильтр "только примеры opposite" (переключается кликом на кнопку Example)
 let exampleOnly = false;
+// фильтр "только ставки без opposite" (переключается кликом на кнопку Other)
+let otherOnly = false;
 
 // Данные последней загрузки — нужны кнопкам EXPORT EXCEL / EXPORT ALL EXAMPLES
 let lastRowData = [];
@@ -1002,7 +1004,9 @@ tableau.extensions.initializeAsync().then(function () {
     currentBrandId = null;
     nooppOnly = false;
     exampleOnly = false;
+    otherOnly = false;
     $("#example-btn").removeClass('active');
+    $("#other-btn").removeClass('active');
     $("#lfs-noopp").removeClass('active');
     $(".butoon-container").empty();
     LoadGameExample();
@@ -1036,6 +1040,39 @@ $("#example-btn").on("click", function () {
     PlayerExampleGenerator();
   } else {
     // Вернуть полный список игроков по всем загруженным данным
+    const groupField = getPlayerGroupField(lastRowData);
+    lastPlayerList = [...new Set(lastRowData.map(item => uniquePlayerKey(item, groupField)))];
+    $(".player-list-count").html(lastPlayerList.length);
+    renderTableRows(lastRowData, lastPlan);
+  }
+  const card = document.querySelector('.lfs-table-card');
+  if (card) card.scrollTop = 0;
+});
+
+// Показать только ставки без opposite / вернуть все данные
+function PlayerOtherGenerator() {
+  $(".UserData").empty();
+  // Получить все Gameid, у которых есть opposite
+  const exampleIds = new Set(buildExampleRows(lastRowData).map(r => r.gameId));
+  // Оставить только строки без opposite
+  const otherRows = lastRowData.filter(r => !exampleIds.has(r.Gameid));
+  // Пересчитаем список игроков только для other-раундов
+  const groupField = getPlayerGroupField(otherRows);
+  lastPlayerList = [...new Set(otherRows.map(item => uniquePlayerKey(item, groupField)))];
+  $(".player-list-count").html(lastPlayerList.length);
+  GenerateHtmalTable(otherRows);
+}
+
+$("#other-btn").on("click", function () {
+  nooppOnly = false;
+  exampleOnly = false;
+  $("#lfs-noopp").removeClass('active');
+  $("#example-btn").removeClass('active');
+  otherOnly = !otherOnly;
+  $(this).toggleClass('active', otherOnly);
+  if (otherOnly) {
+    PlayerOtherGenerator();
+  } else {
     const groupField = getPlayerGroupField(lastRowData);
     lastPlayerList = [...new Set(lastRowData.map(item => uniquePlayerKey(item, groupField)))];
     $(".player-list-count").html(lastPlayerList.length);
