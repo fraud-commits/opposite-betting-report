@@ -924,18 +924,8 @@ tableau.extensions.initializeAsync().then(function () {
       lastGroups = Uniqueidentifier;
       lastPlan = plan;
 
-      function PlayerExampleGenerator() {
-        $(".UserData").empty();
-        const matchingRows = buildExampleRows(rowData);
-        GenerateHtmalTable(matchingRows);
-      }
-
-
-      function GenerateHtmalTable(matchingRows) {
-        renderTableRows(matchingRows || rowData, plan);
-      }
-
-      GenerateHtmalTable();
+      // начальная отрисовка всей таблицы
+      renderTableRows(lastRowData, lastPlan);
 
       // диапазон дат из данных (мин–макс по Round Time): "14 Oct 2026" или "14–15 Oct 2026"
       (function () {
@@ -974,19 +964,6 @@ tableau.extensions.initializeAsync().then(function () {
       $(".triple").html(tripleFormatted.replace(/[$]/g, ''));
       $("#lfs-stat-triple").toggle(Triple > 0);
 
-      $("#example-btn").off("click").on("click", function () {
-        nooppOnly = false;
-        $("#lfs-noopp").removeClass('active');
-        exampleOnly = !exampleOnly;
-        $(this).toggleClass('active', exampleOnly);
-        if (exampleOnly) {
-          PlayerExampleGenerator();
-        } else {
-          renderTableRows(lastRowData, lastPlan);
-        }
-        const card = document.querySelector('.lfs-table-card');
-        if (card) card.scrollTop = 0;
-      });
 
       // Маскировка чужих брендов при клике на кнопку бренда
       $('button[data-Uniqueidentifier]').off("click").on("click", function () {
@@ -1032,6 +1009,33 @@ tableau.extensions.initializeAsync().then(function () {
   });
 });
 
+
+// ---------- Example button (toggle) ----------
+// Вынесена за пределы LoadGameExample, чтобы не перевешиваться при каждом Load
+function GenerateHtmalTable(matchingRows) {
+  renderTableRows(matchingRows || lastRowData, lastPlan);
+}
+
+function PlayerExampleGenerator() {
+  $(".UserData").empty();
+  const matchingRows = buildExampleRows(lastRowData);
+  GenerateHtmalTable(matchingRows);
+}
+
+// Показать только примеры opposite / вернуть все данные
+$("#example-btn").on("click", function () {
+  nooppOnly = false;
+  $("#lfs-noopp").removeClass('active');
+  exampleOnly = !exampleOnly;
+  $(this).toggleClass('active', exampleOnly);
+  if (exampleOnly) {
+    PlayerExampleGenerator();
+  } else {
+    renderTableRows(lastRowData, lastPlan);
+  }
+  const card = document.querySelector('.lfs-table-card');
+  if (card) card.scrollTop = 0;
+});
 
 $("#export-btn").on("click", async function () {
   const $label = $("#exportLabel");
