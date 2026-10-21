@@ -312,7 +312,7 @@ function buildHeader(plan) {
 
 
 // Отрисовать строки в таблице по плану колонок
-function renderTableRows(dataRows, plan) {
+async function renderTableRows(dataRows, plan) {
   if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
     $('#my-table').DataTable().clear().destroy();
   }
@@ -321,13 +321,21 @@ function renderTableRows(dataRows, plan) {
   lastDisplayedPlan = plan || lastDisplayedPlan;
 
   const tbody = document.getElementById("my-table").getElementsByTagName("tbody")[0];
+  const tableEl = document.getElementById("my-table");
+  const emptyEl = document.getElementById("lfs-empty-state");
+  const recEl = document.getElementById('lfs-records');
+  const nooppEl = document.getElementById('lfs-noopp');
+
+  // анимация исчезновения старых строк
+  const existingRows = Array.from(tbody.rows);
+  existingRows.forEach(row => row.classList.add('fade-out'));
+  if (existingRows.length > 0) {
+    await new Promise(resolve => setTimeout(resolve, 180));
+  }
+
   tbody.innerHTML = '';
 
   // пустое состояние: нет данных после LOAD или после фильтрации
-  const tableEl = document.getElementById("my-table");
-  const emptyEl = document.getElementById("lfs-empty-state");
-  const nooppEl = document.getElementById("lfs-noopp");
-
   if (!dataRows || dataRows.length === 0) {
     if (tableEl) tableEl.style.display = 'none';
     if (emptyEl) emptyEl.classList.remove('hidden');
@@ -346,6 +354,8 @@ function renderTableRows(dataRows, plan) {
   for (let i = 0; i < dataRows.length; i++) {
     const row = tbody.insertRow();
     if (!exampleIds.has(dataRows[i].Gameid)) row.classList.add('row-noopp');
+    // анимация появления новой строки
+    row.classList.add('fade-in');
 
     plan.forEach((f, cellIndex) => {
       const cell = row.insertCell(cellIndex);
@@ -386,13 +396,17 @@ function renderTableRows(dataRows, plan) {
         cell.setAttribute("data-masklabel", f.maskLabel);
       }
     });
+
+    // запускаем анимацию появления следующим кадром
+    requestAnimationFrame(() => {
+      row.classList.add('appear');
+    });
   }
 
   // футер: "N records · M rounds · K without opposite"
   const rounds = new Set(dataRows.map(r => r.Gameid)).size;
   let withoutOpposite = 0;
   new Set(dataRows.map(r => r.Gameid)).forEach(g => { if (!exampleIds.has(g)) withoutOpposite++; });
-  const recEl = document.getElementById('lfs-records');
   if (recEl) recEl.textContent = dataRows.length + ' records · ' + rounds + ' rounds · ' + withoutOpposite + ' without opposite';
   if (nooppEl) {
     if (withoutOpposite > 0) {
