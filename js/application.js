@@ -226,6 +226,23 @@ let lastPlayerList = [];
 // Что сейчас на экране (LOAD / EXAMPLE) — нужно кнопке EXPORT EXCEL
 let lastDisplayedRows = [];
 let lastDisplayedPlan = [];
+// Итоги последней загрузки. Обработчик Example находится вне LoadGameExample,
+// поэтому не должен обращаться к локальным Banker/Player/Triple/Other.
+let lastTotals = { first: 0, second: 0, third: 0, other: 0 };
+
+function renderLoadedTotals(showOther) {
+  const format = value => Number(value || 0).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).replace(/[$]/g, '');
+
+  $(".lfs-stat-value.banker").html(format(lastTotals.first));
+  $(".lfs-stat-value.player").html(format(lastTotals.second));
+  $(".lfs-stat-value.triple").html(format(lastTotals.third));
+  $(".lfs-stat-value.other").html(format(lastTotals.other));
+  $("#lfs-stat-triple").toggle(lastTotals.third > 0);
+  $("#lfs-stat-other").toggle(Boolean(showOther) && lastTotals.other > 0);
+}
 
 const isBanker = pos => BANKER_POSITIONS.includes(String(pos).trim().toLowerCase());
 const isPlayer = pos => PLAYER_POSITIONS.includes(String(pos).trim().toLowerCase());
@@ -963,19 +980,8 @@ tableau.extensions.initializeAsync().then(function () {
         else dateEl.textContent = f(min) + ' – ' + f(max);
       })();
 
-      let bankerFormatted = Banker.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      $(".banker").html(bankerFormatted.replace(/[$]/g, ''));
-
-      let playerFormatted = Player.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      $(".player").html(playerFormatted.replace(/[$]/g, ''));
-
-      let tripleFormatted = Triple.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      $(".triple").html(tripleFormatted.replace(/[$]/g, ''));
-      $("#lfs-stat-triple").toggle(Triple > 0);
-
-      let otherFormatted = Other.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-      $(".other").html(otherFormatted.replace(/[$]/g, ''));
-      $("#lfs-stat-other").toggle(Other > 0);
+      lastTotals = { first: Banker, second: Player, third: Triple, other: Other };
+      renderLoadedTotals(true);
 
       // Маскировка чужих брендов при клике на кнопку бренда
       $('button[data-Uniqueidentifier]').off("click").on("click", function () {
@@ -1046,24 +1052,14 @@ $("#example-btn").on("click", function () {
   $(this).toggleClass('active', exampleOnly);
   if (exampleOnly) {
     PlayerExampleGenerator();
-    // Скрываем Other, показываем реальную статистику
-    $("#lfs-stat-other").hide();
-    $(".lfs-stat-value.banker").html(bankerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.player").html(playerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.triple").html(tripleFormatted.replace(/[$]/g, ''));
-    $("#lfs-stat-triple").toggle(Triple > 0);
+    renderLoadedTotals(false);
   } else {
     // Вернуть полный список игроков по всем загруженным данным
     const groupField = getPlayerGroupField(lastRowData);
     lastPlayerList = [...new Set(lastRowData.map(item => uniquePlayerKey(item, groupField)))];
     $(".player-list-count").html(lastPlayerList.length);
     renderTableRows(lastRowData, lastPlan);
-    // Восстанавливаем статистику
-    $(".lfs-stat-value.banker").html(bankerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.player").html(playerFormatted.replace(/[$]/g, ''));
-    $(".lfs-stat-value.triple").html(tripleFormatted.replace(/[$]/g, ''));
-    $("#lfs-stat-triple").toggle(Triple > 0);
-    $("#lfs-stat-other").hide();
+    renderLoadedTotals(true);
   }
   const card = document.querySelector('.lfs-table-card');
   if (card) card.scrollTop = 0;
