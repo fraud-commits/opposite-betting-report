@@ -585,11 +585,12 @@ function buildWorkbookZip(rows, plan) {
     '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
     '</Relationships>');
   // Стили: 0 = обычная, 1 = шапка (#EFFFFB, рамка, центр),
-  //        2 = деньги (0.00, центр, рамка), 3 = то же + красный (отрицательные),
+  //        2 = деньги (#,##0.00, центр, рамка, разделитель тысяч),
+  //        3 = то же + красный (отрицательные),
   //        4 = число без формата (центр, рамка)
   zip.file('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-    '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.00"/></numFmts>' +
+    '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>' +
     '<fonts count="3">' +
     '<font><sz val="11"/><name val="Calibri"/></font>' +
     '<font><b/><sz val="11"/><name val="Calibri"/></font>' +
