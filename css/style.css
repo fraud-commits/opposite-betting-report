@@ -517,27 +517,67 @@ body {
 
 .lfs-popup .lfs-btn { margin-bottom: 14px; }
 
-/* loading state: blur content below topbar, Load button stays sharp */
+/* loading state: blur content below topbar, Load button stays sharp.
+   During loading an explicit overlay sits on top — otherwise the
+   "No data yet" empty state shows through the blur and looks broken. */
 body.is-loading .lfs-subbar,
 body.is-loading .butoon-container,
 body.is-loading #my-table,
-body.is-loading .lfs-footer {
+body.is-loading .lfs-footer,
+body.is-loading .lfs-empty-state,
+body.is-loading .lfs-group-hint {
   filter: blur(6px);
   pointer-events: none;
   user-select: none;
 }
 
-body.is-loading .lfs-empty-state {
-  filter: none !important;
-  pointer-events: auto;
+/* full-area overlay above the blurred content, below the topbar */
+.lfs-loading-overlay {
+  position: fixed;
+  inset: var(--lfs-topbar-h) 0 0 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(251, 252, 251, .35);
+  backdrop-filter: blur(1px);
+}
+
+.lfs-loading-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--lfs-border);
+  border-radius: 9999px;
+  padding: 12px 24px;
+  box-shadow: 0 8px 24px rgba(0, 14, 11, .10);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lfs-text);
+}
+
+.lfs-loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--lfs-green);
+  animation: lfs-pulse 1s ease-in-out infinite;
+}
+.lfs-loading-dot:nth-child(2) { animation-delay: .15s; }
+.lfs-loading-dot:nth-child(3) { animation-delay: .30s; }
+
+.lfs-loading-text { margin-left: 4px; color: var(--lfs-dark); }
+
+@keyframes lfs-pulse {
+  0%, 80%, 100% { transform: scale(.7); opacity: .45; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 /* ---------- misc ---------- */
 
-.buttons-excel { display: none; }
-.buttons-copy { display: none; }
-.dataTables_info { display: none; }
-table.dataTable.floatThead-table { margin-top: 0 !important; }
+/* DataTables больше не подключается — его кнопки не инжектятся в DOM,
+   поэтому скрывать .buttons-excel/.buttons-copy/.dataTables_info не нужно. */
 .margin-l { padding-left: 5px; }
 
 .lfs-copy-btn.is-error {

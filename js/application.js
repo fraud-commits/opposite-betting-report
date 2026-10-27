@@ -349,9 +349,8 @@ function buildHeader(plan) {
 
 // Отрисовать строки в таблице по плану колонок
 function renderTableRows(dataRows, plan) {
-  if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
-    $('#my-table').DataTable().clear().destroy();
-  }
+  // DataTables больше не используется: таблица рендерится вручную
+  // в tbody.innerHTML, поэтому вызывать clear().destroy() не нужно.
 
   lastDisplayedRows = dataRows || [];
   lastDisplayedPlan = plan || lastDisplayedPlan;
@@ -834,10 +833,16 @@ async function exportCurrentViewExcel() {
 
 function showGlobalLoader() {
   document.body.classList.add('is-loading');
+  // Явный оверлей с индикатором загрузки поверх размытого контента:
+  // без него во время Load мелькает "No data yet" и выглядит как баг.
+  const overlay = document.getElementById('lfs-loading-overlay');
+  if (overlay) overlay.classList.remove('hidden');
 }
 
 function hideGlobalLoader() {
   document.body.classList.remove('is-loading');
+  const overlay = document.getElementById('lfs-loading-overlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 
@@ -896,9 +901,7 @@ tableau.extensions.initializeAsync().then(function () {
       let Triple = 0;
       let Other = 0;
 
-      if ($.fn.DataTable && $.fn.DataTable.isDataTable('#my-table')) {
-        $('#my-table').DataTable().clear().destroy();
-      }
+      // DataTables убран: чистим контейнеры вручную.
       $(".butoon-container").empty();
       $(".UserData").empty();
 
