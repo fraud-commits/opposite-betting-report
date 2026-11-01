@@ -26,7 +26,7 @@ const FIELDS = [
   { key: 'Createdate',  aliases: ['Createdate', 'Create Date', 'Start Round Time', 'Round Start Time', 'Round Time', 'Created', 'Created At', 'Finished At', 'Second of Round Time', 'Second of Timestamp', 'Date'], formatted: true },
   { key: 'Gameid',      aliases: ['Gameid', 'Game Id', 'Game ID', 'Round Id', 'Round ID'] },
   { key: 'DealerId',    aliases: ['DealerId', 'Dealer Id', 'Dealer ID'] },
-  { key: 'Partner',     aliases: ['Partner', 'Partner Id', 'PartnerID', 'Company Code', 'CompanyCode', 'Casino Id', 'Casino ID', 'Casino Code', 'Operator Id', 'Operator ID', 'Operator Name'], maskable: true },
+  { key: 'Partner',     aliases: ['Partner', 'Partner Id', 'PartnerID', 'Company Code', 'CompanyCode', 'Casino Id', 'Casino ID', 'Casino Code', 'Operator Id', 'Operator ID', 'Operator Name', 'Brand Id', 'BrandID', 'Brand ID'], maskable: true },
   { key: 'SubPartner',  aliases: ['SubPartner', 'Sub Partner Id', 'SubPartnerID', 'Ho', 'Sub Operator Id', 'Sub Operator Name', 'Brand Code'], maskable: true },
   { key: 'OperatorID',  aliases: ['OperatorID', 'Operator User id', 'Operator User Id'], maskable: true },
   { key: 'UserId',      aliases: ['UserId', 'User Id', 'UserID', 'Player Id', 'Player ID', 'Internal Player Id', 'External Player Id', 'Casino player id', 'Casino Player Id'], maskable: true },
